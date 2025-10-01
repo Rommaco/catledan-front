@@ -15,8 +15,6 @@ import { useToast } from '@/hooks/useToast'
 import { Ganado, CreateGanadoData, UpdateGanadoData } from '@/types/ganado'
 import { 
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   UserGroupIcon,
   TagIcon,
   BeakerIcon,
@@ -54,33 +52,6 @@ function GanadoContent() {
   const [ganadoToDelete, setGanadoToDelete] = useState<Ganado | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Estados de filtros
-  const [searchText, setSearchText] = useState('')
-  const [filterCategoria, setFilterCategoria] = useState('')
-  const [filterEstado, setFilterEstado] = useState('')
-  const [filterSexo, setFilterSexo] = useState('')
-  const [filterReproductivo, setFilterReproductivo] = useState('')
-
-  // Aplicar filtros
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) {
-      return []
-    }
-    
-    return data.filter(ganado => {
-      const matchesSearch = 
-        ganado.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-        ganado.numeroIdentificacion.toLowerCase().includes(searchText.toLowerCase()) ||
-        ganado.raza.toLowerCase().includes(searchText.toLowerCase())
-      
-      const matchesCategoria = !filterCategoria || ganado.categoria === filterCategoria
-      const matchesEstado = !filterEstado || ganado.estado === filterEstado
-      const matchesSexo = !filterSexo || ganado.sexo === filterSexo
-      const matchesReproductivo = !filterReproductivo || ganado.estadoReproductivo === filterReproductivo
-
-      return matchesSearch && matchesCategoria && matchesEstado && matchesSexo && matchesReproductivo
-    })
-  }, [data, searchText, filterCategoria, filterEstado, filterSexo, filterReproductivo])
 
   // Datos seguros para las estadísticas
   const safeData = data || []
@@ -213,7 +184,7 @@ function GanadoContent() {
         }
         return (
           <Badge 
-            variant={colors[categoria as keyof typeof colors] as any || 'default'}
+            variant="ganado"
             size="sm"
           >
             {categoria.charAt(0).toUpperCase() + categoria.slice(1)}
@@ -226,21 +197,25 @@ function GanadoContent() {
       title: 'Sexo',
       dataIndex: 'sexo',
       width: 80,
-      render: (sexo: string) => (
-        <Badge 
-          variant={sexo === 'hembra' ? 'success' : 'warning'}
-          size="sm"
-        >
-          {sexo.charAt(0).toUpperCase() + sexo.slice(1)}
-        </Badge>
-      )
+      render: (value: unknown) => {
+        const sexo = value as string
+        return (
+          <Badge 
+            variant={sexo === 'hembra' ? 'success' : 'warning'}
+            size="sm"
+          >
+            {sexo.charAt(0).toUpperCase() + sexo.slice(1)}
+          </Badge>
+        )
+      }
     },
     {
       key: 'estadoReproductivo',
       title: 'Estado Reproductivo',
       dataIndex: 'estadoReproductivo',
       width: 140,
-      render: (estado: string, record: Ganado) => {
+      render: (value: unknown, record: Ganado) => {
+        const estado = value as string
         if (record.sexo === 'macho') {
           return <span className="text-gray-400 italic">N/A</span>
         }
@@ -254,7 +229,7 @@ function GanadoContent() {
         
         return (
           <Badge 
-            variant={colors[estado as keyof typeof colors] as any || 'default'}
+            variant={estado === 'preñada' ? 'success' : estado === 'lactando' ? 'info' : 'default'}
             size="sm"
           >
             {estado ? estado.charAt(0).toUpperCase() + estado.slice(1) : '-'}
@@ -300,7 +275,7 @@ function GanadoContent() {
         }
         return (
           <Badge 
-            variant={colors[estado as keyof typeof colors] as any || 'default'}
+            variant={estado === 'Activo' ? 'success' : estado === 'Inactivo' ? 'warning' : estado === 'Vendido' ? 'info' : 'error'}
             size="sm"
           >
             {estado}
@@ -429,77 +404,12 @@ function GanadoContent() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 animate-fade-in" style={{ animationDelay: '700ms' }}>
-          <div className="flex items-center mb-4">
-            <FunnelIcon className="h-5 w-5 text-gray-600 mr-2" />
-            <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <Input
-              label="Buscar"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Nombre, ID o raza..."
-              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
-            />
-            
-            <CustomSelect
-              label="Categoría"
-              value={filterCategoria}
-              onChange={setFilterCategoria}
-              options={categoriaOptions}
-              placeholder="Todas las categorías"
-            />
-            
-            <CustomSelect
-              label="Estado"
-              value={filterEstado}
-              onChange={setFilterEstado}
-              options={estadoOptions}
-              placeholder="Todos los estados"
-            />
-            
-            <CustomSelect
-              label="Sexo"
-              value={filterSexo}
-              onChange={setFilterSexo}
-              options={sexoOptions}
-              placeholder="Todos los sexos"
-            />
-            
-            <CustomSelect
-              label="Estado Reproductivo"
-              value={filterReproductivo}
-              onChange={setFilterReproductivo}
-              options={estadoReproductivoOptions}
-              placeholder="Todos los estados"
-            />
-            
-            <div className="flex items-end">
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setSearchText('')
-                  setFilterCategoria('')
-                  setFilterEstado('')
-                  setFilterSexo('')
-                  setFilterReproductivo('')
-                }}
-                className="w-full"
-              >
-                Limpiar Filtros
-              </Button>
-            </div>
-          </div>
-        </div>
 
         {/* Tabla */}
         <div className="animate-fade-in" style={{ animationDelay: '800ms' }}>
           <EnhancedTable
             columns={columns}
-            data={filteredData}
+            data={data || []}
             loading={loading}
             exportFilename="ganado"
             exportTitle="Reporte de Ganado"
@@ -509,10 +419,59 @@ function GanadoContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: filteredData.length,
-              onChange: setCurrentPage,
-              onPageSizeChange: setPageSize
+              total: data?.length || 0,
+              onChange: setCurrentPage
             }}
+            customFilters={[
+              {
+                key: 'sexo',
+                label: 'Sexo',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los sexos' },
+                  { value: 'macho', label: 'Macho' },
+                  { value: 'hembra', label: 'Hembra' }
+                ]
+              },
+              {
+                key: 'estado',
+                label: 'Estado',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los estados' },
+                  { value: 'activo', label: 'Activo' },
+                  { value: 'inactivo', label: 'Inactivo' },
+                  { value: 'vendido', label: 'Vendido' },
+                  { value: 'muerto', label: 'Muerto' }
+                ]
+              },
+              {
+                key: 'categoria',
+                label: 'Categoría',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todas las categorías' },
+                  { value: 'vaca', label: 'Vaca' },
+                  { value: 'toro', label: 'Toro' },
+                  { value: 'ternero', label: 'Ternero' },
+                  { value: 'ternera', label: 'Ternera' },
+                  { value: 'novillo', label: 'Novillo' },
+                  { value: 'vaquilla', label: 'Vaquilla' }
+                ]
+              },
+              {
+                key: 'estadoReproductivo',
+                label: 'Estado Reproductivo',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los estados' },
+                  { value: 'preñada', label: 'Preñada' },
+                  { value: 'lactando', label: 'Lactando' },
+                  { value: 'vacía', label: 'Vacía' },
+                  { value: 'secado', label: 'Secado' }
+                ]
+              }
+            ]}
           />
         </div>
 

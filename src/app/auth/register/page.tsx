@@ -66,19 +66,21 @@ function RegisterContent() {
       })
       
       router.push('/dashboard')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Register error:', error)
       
       let errorMessage = 'Error en el registro. Inténtalo de nuevo.'
       let errorType: 'error' | 'warning' = 'error'
 
-      if (error.name === 'CredentialsError') {
-        errorMessage = 'El email ya está registrado o hay un error en los datos.'
-      } else if (error.name === 'RateLimitError') {
-        errorMessage = 'Demasiados intentos. Espera unos minutos.'
-        errorType = 'warning'
-      } else if (error.name === 'NetworkError') {
-        errorMessage = 'Error de conexión. Verifica tu internet.'
+      if (error instanceof Error) {
+        if (error.name === 'CredentialsError') {
+          errorMessage = 'El email ya está registrado o hay un error en los datos.'
+        } else if (error.name === 'RateLimitError') {
+          errorMessage = 'Demasiados intentos. Espera unos minutos.'
+          errorType = 'warning'
+        } else if (error.name === 'NetworkError') {
+          errorMessage = 'Error de conexión. Verifica tu internet.'
+        }
       }
 
       toast({
@@ -239,7 +241,7 @@ function RegisterContent() {
 
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="lg"
           className="w-full"
           animate={true}

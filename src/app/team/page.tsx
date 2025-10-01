@@ -26,8 +26,6 @@ import {
 import { format } from 'date-fns'
 import {
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   UsersIcon,
   UserPlusIcon,
   KeyIcon,
@@ -71,42 +69,22 @@ function TeamContent() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
 
-  // Filtros
-  const [searchText, setSearchText] = useState('')
-  const [filterRol, setFilterRol] = useState<'' | 'administrativo' | 'trabajador'>('')
-  const [filterStatus, setFilterStatus] = useState<'' | 'online' | 'offline'>('')
-
   const handleRefresh = useCallback(() => {
     fetchSubusers({
       page: currentPage,
-      limit: pageSize,
-      search: searchText,
-      rol: filterRol === '' ? undefined : filterRol,
-      isOnline: filterStatus === '' ? undefined : filterStatus === 'online',
+      limit: pageSize
     })
-    fetchStats({
-      search: searchText,
-      rol: filterRol === '' ? undefined : filterRol,
-      isOnline: filterStatus === '' ? undefined : filterStatus === 'online',
-    })
+    fetchStats()
   }, [
     fetchSubusers,
     fetchStats,
     currentPage,
-    pageSize,
-    searchText,
-    filterRol,
-    filterStatus,
+    pageSize
   ])
 
   useEffect(() => {
     handleRefresh()
   }, [handleRefresh])
-
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) return []
-    return data
-  }, [data])
 
   const handleCreateSubuser = () => {
     setSelectedSubuser(null)
@@ -234,7 +212,7 @@ function TeamContent() {
       render: (rol: string, record: Subuser) => {
         const rolText = record.permisos.includes('administrativo') ? 'Administrativo' : 'Trabajador'
         return (
-          <Badge variant={getRolColor(rolText.toLowerCase())} size="sm">
+          <Badge variant={rolText === 'Administrativo' ? 'success' : 'info'} size="sm">
             {rolText}
           </Badge>
         )
@@ -249,7 +227,7 @@ function TeamContent() {
           {permisos.map((permiso) => (
             <Badge
               key={permiso}
-              variant={getPermisoColor(permiso) as any}
+              variant="info"
               size="sm"
             >
               {permiso}
@@ -282,7 +260,7 @@ function TeamContent() {
       render: (password: string, record: Subuser) => (
         <div className="flex flex-col">
           {password ? (
-            <Badge variant="purple" size="sm">
+            <Badge variant="info" size="sm">
               <KeyIcon className="w-3 h-3 mr-1" />
               {password}
             </Badge>
@@ -397,52 +375,38 @@ function TeamContent() {
           />
         </div>
 
-        {/* Filters */}
-        <Card className="p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input
-              label="Buscar"
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              placeholder="Buscar por nombre o email..."
-              icon={<MagnifyingGlassIcon className="w-5 h-5" />}
-            />
-            <CustomSelect
-              label="Rol"
-              options={rolOptions}
-              value={filterRol}
-              onChange={(value) => setFilterRol(value as any)}
-            />
-            <CustomSelect
-              label="Estado"
-              options={statusOptions}
-              value={filterStatus}
-              onChange={(value) => setFilterStatus(value as any)}
-            />
-            <div className="flex items-end">
-              <Button
-                onClick={handleRefresh}
-                variant="secondary"
-                className="w-full"
-                loading={loading}
-              >
-                <FunnelIcon className="w-4 h-4 mr-2" />
-                Filtrar
-              </Button>
-            </div>
-          </div>
-        </Card>
 
         {/* Table */}
         <EnhancedTable
-          data={filteredData}
+          data={data || []}
           columns={columns}
           loading={loading}
           onEdit={handleEditSubuser}
           onDelete={handleDeleteSubuser}
           exportFilename="subusuarios"
           exportTitle="Reporte de Subusuarios"
-          searchPlaceholder="Buscar subusuarios..."
+          customFilters={[
+            {
+              key: 'rol',
+              label: 'Rol',
+              type: 'select',
+              options: [
+                { value: '', label: 'Todos los roles' },
+                { value: 'administrativo', label: 'Administrativo' },
+                { value: 'trabajador', label: 'Trabajador' }
+              ]
+            },
+            {
+              key: 'isOnline',
+              label: 'Estado',
+              type: 'select',
+              options: [
+                { value: '', label: 'Todos los estados' },
+                { value: 'true', label: 'En línea' },
+                { value: 'false', label: 'Desconectado' }
+              ]
+            }
+          ]}
         />
 
         {/* Modals */}

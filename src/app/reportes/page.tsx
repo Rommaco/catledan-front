@@ -14,8 +14,6 @@ import { Reporte, CreateReporteData, UpdateReporteData, TIPOS_REPORTE, getTipoCo
 import { format } from 'date-fns'
 import {
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   DocumentTextIcon,
   ChartBarIcon,
   EyeIcon,
@@ -51,48 +49,20 @@ function ReportesContent() {
   const [reporteToDelete, setReporteToDelete] = useState<Reporte | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Filtros
-  const [searchText, setSearchText] = useState('')
-  const [filterTipo, setFilterTipo] = useState('')
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchReportes({
       page: currentPage,
-      limit: pageSize,
-      search: searchText || undefined,
-      tipo: filterTipo || undefined,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0],
+      limit: pageSize
     })
-  }, [currentPage, pageSize, searchText, filterTipo, startDate, endDate, fetchReportes])
+  }, [currentPage, pageSize, fetchReportes])
 
   const handleRefresh = () => {
     fetchReportes({
       page: currentPage,
-      limit: pageSize,
-      search: searchText || undefined,
-      tipo: filterTipo || undefined,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0],
+      limit: pageSize
     })
   }
-
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) return []
-    
-    return data.filter((reporte) => {
-      const matchesSearch = !searchText || 
-        reporte.titulo.toLowerCase().includes(searchText.toLowerCase()) ||
-        reporte.descripcion.toLowerCase().includes(searchText.toLowerCase())
-      
-      const matchesTipo = !filterTipo || reporte.tipo === filterTipo
-      
-      return matchesSearch && matchesTipo
-    })
-  }, [data, searchText, filterTipo])
 
   const handleCreateReporte = () => {
     setSelectedReporte(null)
@@ -158,7 +128,7 @@ function ReportesContent() {
       dataIndex: 'tipo',
       render: (tipo: string) => (
         <Badge
-          variant={getTipoColor(tipo) as any}
+          variant="info"
           size="sm"
         >
           {getTipoLabel(tipo)}
@@ -185,7 +155,7 @@ function ReportesContent() {
       key: 'createdBy',
       title: 'Creado por',
       dataIndex: 'createdBy',
-      render: (createdBy: any) => (
+      render: (createdBy: { fullName?: string; email?: string } | null | undefined) => (
         <span className="text-sm text-gray-600">
           {createdBy?.fullName || createdBy?.email || 'N/A'}
         </span>
@@ -269,73 +239,11 @@ function ReportesContent() {
           />
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar
-              </label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Buscar por título o descripción..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Reporte
-              </label>
-              <select
-                value={filterTipo}
-                onChange={(e) => setFilterTipo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              >
-                <option value="">Todos los tipos</option>
-                {tipoOptions.map((tipo) => (
-                  <option key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Inicio
-              </label>
-              <input
-                type="date"
-                value={startDate ? startDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Fin
-              </label>
-              <input
-                type="date"
-                value={endDate ? endDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Tabla */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <EnhancedTable
-            data={filteredData}
+            data={data || []}
             columns={columns}
             loading={loading}
             onRefresh={handleRefresh}
@@ -346,10 +254,25 @@ function ReportesContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: filteredData.length,
-              onChange: setCurrentPage,
-              onPageSizeChange: setPageSize,
+              total: data?.length || 0,
+              onChange: setCurrentPage
             }}
+            customFilters={[
+              {
+                key: 'tipo',
+                label: 'Tipo de Reporte',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los tipos' },
+                  { value: 'produccion', label: 'Producción' },
+                  { value: 'financiero', label: 'Financiero' },
+                  { value: 'inventario', label: 'Inventario' },
+                  { value: 'sanitario', label: 'Sanitario' },
+                  { value: 'reproductivo', label: 'Reproductivo' },
+                  { value: 'nutricional', label: 'Nutricional' }
+                ]
+              }
+            ]}
           />
         </div>
 

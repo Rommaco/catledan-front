@@ -12,8 +12,6 @@ import { useToast } from '@/hooks/useToast'
 import { Cultivo, CreateCultivoData, UpdateCultivoData } from '@/types/cultivo'
 import {
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   CalendarDaysIcon,
   SunIcon,
   ChartBarIcon,
@@ -77,49 +75,17 @@ function CultivosContent() {
   const [cultivoToDelete, setCultivoToDelete] = useState<Cultivo | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Filtros
-  const [searchText, setSearchText] = useState('')
-  const [filterTipo, setFilterTipo] = useState('')
-  const [filterEstado, setFilterEstado] = useState('')
-  const [filterStartDate, setFilterStartDate] = useState<Date | null>(null)
-  const [filterEndDate, setFilterEndDate] = useState<Date | null>(null)
-
   const handleRefresh = useCallback(() => {
     fetchCultivos({
-      search: searchText,
-      tipo: filterTipo || undefined,
-      estado: filterEstado || undefined,
-      startDate: filterStartDate ? format(filterStartDate, 'yyyy-MM-dd') : undefined,
-      endDate: filterEndDate ? format(filterEndDate, 'yyyy-MM-dd') : undefined,
+      page: currentPage,
+      limit: pageSize
     })
     fetchStats()
-  }, [fetchCultivos, fetchStats, searchText, filterTipo, filterEstado, filterStartDate, filterEndDate])
+  }, [fetchCultivos, fetchStats, currentPage, pageSize])
 
   useEffect(() => {
     handleRefresh()
-  }, [handleRefresh, currentPage, pageSize])
-
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) {
-      return []
-    }
-
-    return data.filter((cultivo) => {
-      const matchesSearch =
-        cultivo.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-        cultivo.tipo.toLowerCase().includes(searchText.toLowerCase()) ||
-        (cultivo.variedad && cultivo.variedad.toLowerCase().includes(searchText.toLowerCase()))
-
-      const matchesTipo = !filterTipo || cultivo.tipo === filterTipo
-      const matchesEstado = !filterEstado || cultivo.estado === filterEstado
-
-      const cultivoDate = new Date(cultivo.fechaSiembra)
-      const matchesStartDate = filterStartDate ? cultivoDate >= filterStartDate : true
-      const matchesEndDate = filterEndDate ? cultivoDate <= filterEndDate : true
-
-      return matchesSearch && matchesTipo && matchesEstado && matchesStartDate && matchesEndDate
-    })
-  }, [data, searchText, filterTipo, filterEstado, filterStartDate, filterEndDate])
+  }, [handleRefresh])
 
   const handleCreateCultivo = () => {
     setSelectedCultivo(null)
@@ -222,7 +188,7 @@ function CultivosContent() {
       dataIndex: 'tipo',
       render: (tipo: string) => (
         <Badge 
-          variant={getTipoColor(tipo) as any}
+          variant="cultivo"
           size="sm"
         >
           {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
@@ -243,7 +209,7 @@ function CultivosContent() {
       dataIndex: 'estado',
       render: (estado: string) => (
         <Badge 
-          variant={getEstadoColor(estado) as any}
+          variant="info"
           size="sm"
         >
           {estado.charAt(0).toUpperCase() + estado.slice(1)}
@@ -341,73 +307,12 @@ function CultivosContent() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200 animate-fade-in" style={{ animationDelay: '700ms' }}>
-          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-            <FunnelIcon className="h-5 w-5" />
-            Filtros
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Input
-              label="Buscar"
-              placeholder="Nombre, tipo o variedad..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              icon={<MagnifyingGlassIcon className="h-4 w-4" />}
-            />
-            
-            <CustomSelect
-              label="Tipo"
-              value={filterTipo}
-              onChange={setFilterTipo}
-              options={tiposCultivo}
-              placeholder="Todos los tipos"
-              icon={<ChartBarIcon className="h-4 w-4" />}
-            />
-            
-            <CustomSelect
-              label="Estado"
-              value={filterEstado}
-              onChange={setFilterEstado}
-              options={estadosCultivo}
-              placeholder="Todos los estados"
-              icon={<BeakerIcon className="h-4 w-4" />}
-            />
-            
-            <DatePicker
-              label="Fecha Desde"
-              value={filterStartDate}
-              onChange={setFilterStartDate}
-              icon={<CalendarDaysIcon className="h-4 w-4" />}
-            />
-            
-            <DatePicker
-              label="Fecha Hasta"
-              value={filterEndDate}
-              onChange={setFilterEndDate}
-              icon={<CalendarDaysIcon className="h-4 w-4" />}
-            />
-          </div>
-          
-          <div className="flex justify-end mt-4">
-            <Button
-              onClick={handleRefresh}
-              variant="secondary"
-              className="flex items-center space-x-2"
-              disabled={loading}
-            >
-              <FunnelIcon className="h-5 w-5" />
-              <span>Aplicar Filtros</span>
-            </Button>
-          </div>
-        </div>
 
         {/* Tabla */}
         <div className="animate-fade-in" style={{ animationDelay: '800ms' }}>
           <EnhancedTable
             columns={columns}
-            data={filteredData}
+            data={data || []}
             loading={loading}
             exportFilename="cultivos"
             exportTitle="Reporte de Cultivos"
@@ -419,8 +324,37 @@ function CultivosContent() {
               pageSize: pageSize,
               total: total,
               onChange: setCurrentPage,
-              onPageSizeChange: setPageSize,
             }}
+            customFilters={[
+              {
+                key: 'tipo',
+                label: 'Tipo',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los tipos' },
+                  { value: 'maiz', label: 'Maíz' },
+                  { value: 'trigo', label: 'Trigo' },
+                  { value: 'soja', label: 'Soja' },
+                  { value: 'arroz', label: 'Arroz' },
+                  { value: 'sorgo', label: 'Sorgo' },
+                  { value: 'cebada', label: 'Cebada' }
+                ]
+              },
+              {
+                key: 'estado',
+                label: 'Estado',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los estados' },
+                  { value: 'siembra', label: 'Siembra' },
+                  { value: 'crecimiento', label: 'Crecimiento' },
+                  { value: 'floracion', label: 'Floración' },
+                  { value: 'madurez', label: 'Madurez' },
+                  { value: 'cosecha', label: 'Cosecha' },
+                  { value: 'finalizado', label: 'Finalizado' }
+                ]
+              }
+            ]}
           />
         </div>
 

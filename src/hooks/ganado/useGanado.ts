@@ -1,6 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { ganadoService } from '@/lib/ganado/ganadoService'
+// import { useOfflineData } from '@/hooks/offline/useOfflineData' // Deshabilitado temporalmente
 import { 
   Ganado, 
   CreateGanadoData, 
@@ -16,12 +17,36 @@ export const useGanado = () => {
   const [total, setTotal] = useState(0)
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  // OFFLINE FEATURES - DESHABILITADO PARA PRODUCCIÓN
+  // const [offlineData, setOfflineData] = useState<Ganado[]>([])
+  // const saveOfflineData = async (data: any) => {
+  //   if (typeof window !== 'undefined') {
+  //     const offlineGanado = JSON.parse(localStorage.getItem('offline_ganado') || '[]')
+  //     offlineGanado.push(data)
+  //     localStorage.setItem('offline_ganado', JSON.stringify(offlineGanado))
+  //   }
+  // }
+  // const syncData = async () => {
+  //   console.log('🔄 Sincronización simple pendiente de implementar')
+  // }
 
   const fetchGanado = useCallback(async (filters?: GanadoFilters) => {
     try {
       setLoading(true)
       setError(null)
       
+      // OFFLINE FEATURES - DESHABILITADO PARA PRODUCCIÓN
+      // if (typeof window !== 'undefined' && !navigator.onLine) {
+      //   console.log('📴 Offline: Cargando ganado desde localStorage')
+      //   const localData = JSON.parse(localStorage.getItem('offline_ganado') || '[]')
+      //   setData(localData)
+      //   setTotal(localData.length)
+      //   setOfflineData(localData)
+      //   setLoading(false)
+      //   return
+      // }
+      
+      // Cargar del servidor NORMALMENTE
       const response = await ganadoService.getAll({
         ...filters,
         page: currentPage,
@@ -42,6 +67,23 @@ export const useGanado = () => {
       setLoading(true)
       setError(null)
       
+      // OFFLINE FEATURES - DESHABILITADO PARA PRODUCCIÓN
+      // if (typeof window !== 'undefined' && !navigator.onLine) {
+      //   const newGanado = {
+      //     ...ganadoData,
+      //     _id: `offline_${Date.now()}`,
+      //     createdAt: new Date().toISOString(),
+      //     updatedAt: new Date().toISOString()
+      //   } as Ganado
+      //   await saveOfflineData(newGanado, 'create')
+      //   console.log('💾 Ganado guardado offline')
+      //   setOfflineData(prev => [...prev, newGanado])
+      //   setData(prev => [...prev, newGanado])
+      //   setTotal(prev => prev + 1)
+      //   return
+      // }
+      
+      // Guardar en servidor NORMALMENTE (MODO ONLINE)
       await ganadoService.create(ganadoData)
       await fetchGanado() // Recargar la lista
     } catch (err) {
@@ -57,6 +99,26 @@ export const useGanado = () => {
       setLoading(true)
       setError(null)
       
+      // OFFLINE FEATURES - DESHABILITADO PARA PRODUCCIÓN
+      // if (typeof window !== 'undefined' && !navigator.onLine) {
+      //   const updatedGanado = {
+      //     ...(data.find(g => g._id === id) || {}),
+      //     ...ganadoData,
+      //     _id: id,
+      //     updatedAt: new Date().toISOString()
+      //   } as Ganado
+      //   console.log('💾 Ganado actualizado offline')
+      //   setData(prev => prev.map(g => g._id === id ? updatedGanado : g))
+      //   setOfflineData(prev => prev.map(g => g._id === id ? updatedGanado : g))
+      //   if (typeof window !== 'undefined') {
+      //     const localData = JSON.parse(localStorage.getItem('offline_ganado') || '[]')
+      //     const updated = localData.map((g: Ganado) => g._id === id ? updatedGanado : g)
+      //     localStorage.setItem('offline_ganado', JSON.stringify(updated))
+      //   }
+      //   return
+      // }
+      
+      // Actualizar en servidor NORMALMENTE (MODO ONLINE)
       await ganadoService.update(id, ganadoData)
       await fetchGanado() // Recargar la lista
     } catch (err) {
@@ -72,6 +134,21 @@ export const useGanado = () => {
       setLoading(true)
       setError(null)
       
+      // OFFLINE FEATURES - DESHABILITADO PARA PRODUCCIÓN
+      // if (typeof window !== 'undefined' && !navigator.onLine) {
+      //   console.log('💾 Ganado eliminado offline')
+      //   setData(prev => prev.filter(g => g._id !== id))
+      //   setOfflineData(prev => prev.filter(g => g._id !== id))
+      //   setTotal(prev => prev - 1)
+      //   if (typeof window !== 'undefined') {
+      //     const localData = JSON.parse(localStorage.getItem('offline_ganado') || '[]')
+      //     const filtered = localData.filter((g: Ganado) => g._id !== id)
+      //     localStorage.setItem('offline_ganado', JSON.stringify(filtered))
+      //   }
+      //   return
+      // }
+      
+      // Eliminar en servidor NORMALMENTE (MODO ONLINE)
       await ganadoService.delete(id)
       await fetchGanado() // Recargar la lista
     } catch (err) {
@@ -106,6 +183,7 @@ export const useGanado = () => {
     updateGanado,
     deleteGanado,
     refresh,
+    // syncData, // OFFLINE FEATURE - DESHABILITADO
     
     // Paginación
     setCurrentPage,

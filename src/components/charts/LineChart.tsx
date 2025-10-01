@@ -4,7 +4,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { cn } from '@/lib/utils'
 
 interface LineChartProps {
-  data: any[]
+  data: Record<string, unknown>[]
   xKey: string
   yKey: string
   color?: string

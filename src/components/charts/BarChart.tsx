@@ -4,7 +4,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { cn } from '@/lib/utils'
 
 interface BarChartProps {
-  data: any[]
+  data: Record<string, unknown>[]
   xKey: string
   yKey: string
   color?: string

@@ -77,7 +77,7 @@ class DashboardService {
   async getCultivosDashboard(): Promise<CultivoDashboard[]> {
     try {
       // Obtener todos los cultivos y procesarlos para el dashboard
-      const response = await this.request<{ data: any[], total: number }>('/cultivos')
+      const response = await this.request<{ data: Record<string, unknown>[], total: number }>('/cultivos')
       const cultivos = response.data || response
       
       // Validar que cultivos sea un array
@@ -87,7 +87,7 @@ class DashboardService {
       }
       
       // Agrupar por tipo de cultivo
-      const cultivosGrouped = cultivos.reduce((acc: any, cultivo: any) => {
+      const cultivosGrouped = cultivos.reduce((acc: Record<string, CultivoDashboard>, cultivo: Record<string, unknown>) => {
         const tipo = cultivo.tipo || 'Sin tipo'
         if (!acc[tipo]) {
           acc[tipo] = { _id: tipo, cantidad: 0, area: 0 }
@@ -109,12 +109,12 @@ class DashboardService {
   }
 
   // Endpoints de prueba para debugging
-  async testGanado(): Promise<any> {
-    return this.request<any>('/dashboard/test-ganado')
+  async testGanado(): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>('/dashboard/test-ganado')
   }
 
-  async testFinanzas(): Promise<any> {
-    return this.request<any>('/dashboard/test-finanzas')
+  async testFinanzas(): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>('/dashboard/test-finanzas')
   }
 }
 

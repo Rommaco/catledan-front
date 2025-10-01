@@ -83,12 +83,12 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
           area: cultivo.area,
           fechaSiembra: new Date(cultivo.fechaSiembra),
           fechaCosecha: cultivo.fechaCosecha ? new Date(cultivo.fechaCosecha) : null,
-          variedad: cultivo.variedad || '',
+          variedad: cultivo.variedad || undefined,
           densidadSiembra: cultivo.densidadSiembra || 0,
           rendimientoEsperado: cultivo.rendimientoEsperado || 0,
           rendimientoReal: cultivo.rendimientoReal || 0,
           estado: cultivo.estado,
-          observaciones: cultivo.observaciones || '',
+          observaciones: cultivo.observaciones || undefined,
         })
       } else {
         // Resetear para crear nuevo
@@ -200,7 +200,6 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'create' ? 'Agregar Cultivo' : 'Editar Cultivo'}
-      description="Ingresa los detalles del cultivo."
     >
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,8 +208,6 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
             value={formData.nombre}
             onChange={(e) => handleInputChange('nombre', e.target.value)}
             error={errors.nombre}
-            icon={<SunIcon className="h-4 w-4" />}
-            required
           />
 
           <CustomSelect
@@ -220,8 +217,6 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
             options={tiposCultivo}
             placeholder="Selecciona el tipo"
             error={errors.tipo}
-            icon={<ChartBarIcon className="h-4 w-4" />}
-            required
           />
 
           <Input
@@ -230,8 +225,6 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
             value={formData.area.toString()}
             onChange={(e) => handleInputChange('area', parseFloat(e.target.value) || 0)}
             error={errors.area}
-            icon={<ChartBarIcon className="h-4 w-4" />}
-            required
             min={0.1}
             step={0.1}
           />
@@ -241,16 +234,13 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
             value={formData.fechaSiembra}
             onChange={(date) => handleInputChange('fechaSiembra', date)}
             error={errors.fechaSiembra}
-            icon={<CalendarDaysIcon className="h-4 w-4" />}
-            required
           />
 
           <DatePicker
             label="Fecha de Cosecha (Opcional)"
-            value={formData.fechaCosecha}
+            value={formData.fechaCosecha || undefined}
             onChange={(date) => handleInputChange('fechaCosecha', date)}
             error={errors.fechaCosecha}
-            icon={<CalendarDaysIcon className="h-4 w-4" />}
           />
 
           <CustomSelect
@@ -260,8 +250,6 @@ export const CultivoModal: React.FC<CultivoModalProps> = ({
             options={estadosCultivo}
             placeholder="Selecciona el estado"
             error={errors.estado}
-            icon={<ChartBarIcon className="h-4 w-4" />}
-            required
           />
         </div>
 

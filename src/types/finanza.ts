@@ -159,3 +159,5 @@ export const getEstadoLabel = (estado: string) => {
   const estadoConfig = ESTADOS_FINANZA.find(e => e.value === estado)
   return estadoConfig?.label || estado
 }
+
+

@@ -12,6 +12,7 @@ import { Select } from '@/components/ui/Select'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { useToast } from '@/hooks/useToast'
+import { ToastProvider } from '@/contexts/ToastContext'
 import { 
   ChartBarIcon, 
   CpuChipIcon, 
@@ -53,7 +54,7 @@ function ShowcaseContent() {
       key: 'name',
       title: 'Nombre',
       dataIndex: 'name',
-      render: (value: string, record: any) => (
+      render: (value: string) => (
         <div className="flex items-center">
           <UserIcon className="h-4 w-4 text-gray-400 mr-2" />
           <span className="font-medium">{value}</span>
@@ -144,7 +145,7 @@ function ShowcaseContent() {
     })
   }
 
-  const handleView = (record: any) => {
+  const handleView = (record: { name: string }) => {
     toast({
       type: 'info',
       title: 'Ver detalles',
@@ -152,7 +153,7 @@ function ShowcaseContent() {
     })
   }
 
-  const handleEdit = (record: any) => {
+  const handleEdit = (record: { name: string }) => {
     toast({
       type: 'warning',
       title: 'Editar registro',
@@ -160,7 +161,7 @@ function ShowcaseContent() {
     })
   }
 
-  const handleDelete = (record: any) => {
+  const handleDelete = (record: { name: string }) => {
     toast({
       type: 'error',
       title: 'Eliminar registro',
@@ -364,8 +365,8 @@ function ShowcaseContent() {
               <DatePicker
                 label="Fecha de nacimiento"
                 placeholder="Selecciona una fecha"
-                value={selectedDate}
-                onChange={setSelectedDate}
+                value={selectedDate || undefined}
+                onChange={(date) => setSelectedDate(date)}
                 animate={isAnimating}
                 variant="filled"
                 maxDate={new Date()}

@@ -81,14 +81,14 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
           fechaUltimoCelo: ganado.fechaUltimoCelo ? new Date(ganado.fechaUltimoCelo) : null,
           fechaUltimaMonta: ganado.fechaUltimaMonta ? new Date(ganado.fechaUltimaMonta) : null,
           fechaInseminacion: ganado.fechaInseminacion ? new Date(ganado.fechaInseminacion) : null,
-          toroPadre: ganado.toroPadre || '',
+          toroPadre: ganado.toroPadre || undefined,
           fechaEsperadaParto: ganado.fechaEsperadaParto ? new Date(ganado.fechaEsperadaParto) : null,
           tiempoSeca: ganado.tiempoSeca || 0,
           diasLactancia: ganado.diasLactancia || 0,
           numeroPartos: ganado.numeroPartos || 0,
           ultimaProduccionLeche: ganado.ultimaProduccionLeche || 0,
           proximaVacuna: ganado.proximaVacuna ? new Date(ganado.proximaVacuna) : null,
-          observaciones: ganado.observaciones || ''
+          observaciones: ganado.observaciones || undefined
         })
       } else {
         // Resetear para crear nuevo
@@ -177,7 +177,7 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={mode === 'create' ? 'Agregar Ganado' : 'Editar Ganado'}
-      size="large"
+      size="lg"
     >
       <div className="space-y-6">
         {/* Información Básica */}
@@ -194,8 +194,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(e) => handleInputChange('nombre', e.target.value)}
               placeholder="Ej: Rosita"
               error={errors.nombre}
-              icon={<UserIcon className="h-4 w-4" />}
-              required
             />
             
             <Input
@@ -204,8 +202,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(e) => handleInputChange('raza', e.target.value)}
               placeholder="Ej: Holstein"
               error={errors.raza}
-              icon={<TagIcon className="h-4 w-4" />}
-              required
             />
             
             <Input
@@ -214,8 +210,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(e) => handleInputChange('numeroIdentificacion', e.target.value)}
               placeholder="Ej: VACA001"
               error={errors.numeroIdentificacion}
-              icon={<IdentificationIcon className="h-4 w-4" />}
-              required
             />
             
             <CustomSelect
@@ -224,7 +218,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(value) => handleInputChange('sexo', value)}
               options={sexoOptions}
               placeholder="Seleccionar sexo"
-              required
             />
             
             <CustomSelect
@@ -233,7 +226,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(value) => handleInputChange('categoria', value)}
               options={categoriaOptions}
               placeholder="Seleccionar categoría"
-              required
             />
             
             <CustomSelect
@@ -242,7 +234,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(value) => handleInputChange('estado', value)}
               options={estadoOptions}
               placeholder="Seleccionar estado"
-              required
             />
             
             <Input
@@ -252,8 +243,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(e) => handleInputChange('peso', parseFloat(e.target.value) || 0)}
               placeholder="Ej: 650"
               error={errors.peso}
-              icon={<ScaleIcon className="h-4 w-4" />}
-              required
             />
             
             <Input
@@ -263,8 +252,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               onChange={(e) => handleInputChange('edad', parseInt(e.target.value) || 0)}
               placeholder="Ej: 4"
               error={errors.edad}
-              icon={<CalendarDaysIcon className="h-4 w-4" />}
-              required
             />
             
             <DatePicker
@@ -272,7 +259,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               value={formData.fechaIngreso}
               onChange={(date) => handleInputChange('fechaIngreso', date)}
               error={errors.fechaIngreso}
-              required
             />
           </div>
         </div>
@@ -296,33 +282,32 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
               
               <DatePicker
                 label="Último Celo"
-                value={formData.fechaUltimoCelo || ''}
+                value={formData.fechaUltimoCelo || undefined}
                 onChange={(date) => handleInputChange('fechaUltimoCelo', date)}
               />
               
               <DatePicker
                 label="Última Monta"
-                value={formData.fechaUltimaMonta || ''}
+                value={formData.fechaUltimaMonta || undefined}
                 onChange={(date) => handleInputChange('fechaUltimaMonta', date)}
               />
               
               <DatePicker
                 label="Fecha de Inseminación"
-                value={formData.fechaInseminacion || ''}
+                value={formData.fechaInseminacion || undefined}
                 onChange={(date) => handleInputChange('fechaInseminacion', date)}
               />
               
               <Input
                 label="Toro Padre"
-                value={formData.toroPadre || ''}
+                value={formData.toroPadre || undefined}
                 onChange={(e) => handleInputChange('toroPadre', e.target.value)}
                 placeholder="Ej: TORO001"
-                icon={<UserIcon className="h-4 w-4" />}
               />
               
               <DatePicker
                 label="Fecha Esperada de Parto"
-                value={formData.fechaEsperadaParto || ''}
+                value={formData.fechaEsperadaParto || undefined}
                 onChange={(date) => handleInputChange('fechaEsperadaParto', date)}
               />
               
@@ -332,7 +317,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
                 value={formData.tiempoSeca || 0}
                 onChange={(e) => handleInputChange('tiempoSeca', parseInt(e.target.value) || 0)}
                 placeholder="Ej: 45"
-                icon={<ClockIcon className="h-4 w-4" />}
               />
               
               <Input
@@ -341,7 +325,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
                 value={formData.diasLactancia || 0}
                 onChange={(e) => handleInputChange('diasLactancia', parseInt(e.target.value) || 0)}
                 placeholder="Ej: 120"
-                icon={<ClockIcon className="h-4 w-4" />}
               />
               
               <Input
@@ -350,7 +333,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
                 value={formData.numeroPartos || 0}
                 onChange={(e) => handleInputChange('numeroPartos', parseInt(e.target.value) || 0)}
                 placeholder="Ej: 3"
-                icon={<BeakerIcon className="h-4 w-4" />}
               />
               
               <Input
@@ -360,12 +342,11 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
                 value={formData.ultimaProduccionLeche || 0}
                 onChange={(e) => handleInputChange('ultimaProduccionLeche', parseFloat(e.target.value) || 0)}
                 placeholder="Ej: 25"
-                icon={<BeakerIcon className="h-4 w-4" />}
               />
               
               <DatePicker
                 label="Próxima Vacuna"
-                value={formData.proximaVacuna || ''}
+                value={formData.proximaVacuna || undefined}
                 onChange={(date) => handleInputChange('proximaVacuna', date)}
               />
             </div>
@@ -382,7 +363,7 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
           <textarea
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
             rows={3}
-            value={formData.observaciones || ''}
+            value={formData.observaciones || undefined}
             onChange={(e) => handleInputChange('observaciones', e.target.value)}
             placeholder="Observaciones adicionales sobre el animal..."
           />

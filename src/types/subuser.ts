@@ -93,7 +93,7 @@ export const getPermisoColor = (permiso: string) => {
 }
 
 export const getStatusColor = (isOnline: boolean) => {
-  return isOnline ? 'success' : 'gray'
+  return isOnline ? 'success' : 'default'
 }
 
 export const getStatusText = (isOnline: boolean, lastSeen?: string) => {

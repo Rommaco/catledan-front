@@ -13,8 +13,6 @@ import { useToast } from '@/hooks/useToast'
 import { ProduccionLeche, CreateProduccionLecheData, UpdateProduccionLecheData } from '@/types/produccionLeche'
 import { 
   PlusIcon,
-  MagnifyingGlassIcon,
-  FunnelIcon,
   CalendarDaysIcon,
   BeakerIcon,
   ChartBarIcon,
@@ -38,9 +36,6 @@ function ProduccionLecheContent() {
 
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [searchText, setSearchText] = useState('')
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedProduccion, setSelectedProduccion] = useState<ProduccionLeche | null>(null)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
@@ -55,27 +50,11 @@ function ProduccionLecheContent() {
   useEffect(() => {
     fetchProduccionLeche({
       page: currentPage,
-      limit: pageSize,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0]
+      limit: pageSize
     })
     fetchStats()
-  }, [currentPage, pageSize, startDate, endDate])
+  }, [currentPage, pageSize])
 
-  // Aplicar filtros
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) {
-      return []
-    }
-    
-    return data.filter(produccion => {
-      const matchesSearch = 
-        produccion.observaciones?.toLowerCase().includes(searchText.toLowerCase()) ||
-        produccion.cantidad.toString().includes(searchText.toLowerCase())
-      
-      return matchesSearch
-    })
-  }, [data, searchText])
 
   // Datos seguros para las estadísticas
   const safeData = data || []
@@ -159,9 +138,7 @@ function ProduccionLecheContent() {
     setCurrentPage(1)
     fetchProduccionLeche({
       page: 1,
-      limit: pageSize,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0]
+      limit: pageSize
     })
     fetchStats()
   }
@@ -302,46 +279,12 @@ function ProduccionLecheContent() {
           </div>
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white p-4 rounded-lg border border-gray-200 animate-fade-in" style={{ animationDelay: '700ms' }}>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por observaciones o cantidad..."
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={startDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Fecha inicio"
-              />
-              <input
-                type="date"
-                value={endDate?.toISOString().split('T')[0] || ''}
-                onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                placeholder="Fecha fin"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Tabla */}
         <div className="animate-fade-in" style={{ animationDelay: '800ms' }}>
           <EnhancedTable
             columns={columns}
-            data={filteredData}
+            data={data || []}
             loading={loading}
             exportFilename="produccion-leche"
             exportTitle="Reporte de Producción de Leche"
@@ -351,9 +294,8 @@ function ProduccionLecheContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: filteredData.length,
-              onChange: setCurrentPage,
-              onPageSizeChange: setPageSize
+              total: data?.length || 0,
+              onChange: setCurrentPage
             }}
           />
         </div>

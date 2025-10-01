@@ -42,19 +42,21 @@ function LoginContent() {
         message: 'Has iniciado sesión correctamente.'
       })
       router.push(from)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error)
       
       let errorMessage = 'Error al iniciar sesión. Inténtalo de nuevo.'
       let errorType: 'error' | 'warning' = 'error'
 
-      if (error.name === 'CredentialsError') {
-        errorMessage = 'Email o contraseña incorrectos.'
-      } else if (error.name === 'RateLimitError') {
-        errorMessage = 'Demasiados intentos. Espera unos minutos.'
-        errorType = 'warning'
-      } else if (error.name === 'NetworkError') {
-        errorMessage = 'Error de conexión. Verifica tu internet.'
+      if (error instanceof Error) {
+        if (error.name === 'CredentialsError') {
+          errorMessage = 'Email o contraseña incorrectos.'
+        } else if (error.name === 'RateLimitError') {
+          errorMessage = 'Demasiados intentos. Espera unos minutos.'
+          errorType = 'warning'
+        } else if (error.name === 'NetworkError') {
+          errorMessage = 'Error de conexión. Verifica tu internet.'
+        }
       }
 
       toast({
@@ -152,7 +154,7 @@ function LoginContent() {
 
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           size="lg"
           className="w-full"
           animate={true}

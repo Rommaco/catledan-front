@@ -24,10 +24,24 @@ interface TableColumn<T> {
   key: string
   title: string
   dataIndex: string
-  render?: (value: unknown, record: T, index: number) => React.ReactNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  render?: (value: any, record: T, index: number) => React.ReactNode
   width?: string | number
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
+}
+
+interface FilterOption {
+  value: string
+  label: string
+}
+
+interface CustomFilter {
+  key: string
+  label: string
+  type: 'select' | 'date' | 'text'
+  options?: FilterOption[]
+  placeholder?: string
 }
 
 interface TableProps<T> {
@@ -57,9 +71,10 @@ interface TableProps<T> {
   onDelete?: (record: T) => void
   exportFilename?: string
   exportTitle?: string
+  customFilters?: CustomFilter[]
 }
 
-export function EnhancedTable<T extends Record<string, any>>({
+export function EnhancedTable<T = Record<string, unknown>>({
   columns,
   data,
   loading = false,
@@ -80,12 +95,77 @@ export function EnhancedTable<T extends Record<string, any>>({
   onEdit,
   onDelete,
   exportFilename = 'reporte',
-  exportTitle = 'Reporte de Datos'
+  exportTitle = 'Reporte de Datos',
+  customFilters = []
 }: TableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | null>(null)
   const [dateTo, setDateTo] = useState<Date | null>(null)
   const [selectedFilter, setSelectedFilter] = useState<string>('')
+  const [customFilterValues, setCustomFilterValues] = useState<Record<string, string>>({})
+
+  // Filtrar datos
+  const filteredData = React.useMemo(() => {
+    let filtered = data
+
+    // Filtro por búsqueda
+    if (searchTerm) {
+      filtered = filtered.filter((item: T) => {
+        return Object.values(item).some(value => 
+          value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      })
+    }
+
+    // Filtro por fechas
+    if (dateFrom || dateTo) {
+      filtered = filtered.filter((item: T) => {
+        // Buscar campos de fecha en el objeto
+        const dateFields = ['fecha', 'fechaCreacion', 'fechaActualizacion', 'createdAt', 'updatedAt', 'fechaIngreso']
+        
+        for (const field of dateFields) {
+          if (item[field]) {
+            const itemDate = new Date(item[field])
+            if (!isNaN(itemDate.getTime())) {
+              const isAfterFrom = !dateFrom || itemDate >= dateFrom
+              const isBeforeTo = !dateTo || itemDate <= dateTo
+              return isAfterFrom && isBeforeTo
+            }
+          }
+        }
+        
+        // Si no encuentra campos de fecha, incluir el item
+        return true
+      })
+    }
+
+    // Filtros personalizados
+    customFilters.forEach(filter => {
+      const filterValue = customFilterValues[filter.key]
+      if (filterValue) {
+        filtered = filtered.filter((item: T) => {
+          const itemValue = item[filter.key]
+          if (filter.type === 'select') {
+            return itemValue === filterValue
+          } else if (filter.type === 'text') {
+            return itemValue && itemValue.toString().toLowerCase().includes(filterValue.toLowerCase())
+          }
+          return true
+        })
+      }
+    })
+
+    return filtered
+  }, [data, searchTerm, dateFrom, dateTo, customFilterValues, customFilters])
+
+  // Paginación de datos filtrados
+  const paginatedData = React.useMemo(() => {
+    if (!pagination) return filteredData
+    
+    const startIndex = (pagination.current - 1) * pagination.pageSize
+    const endIndex = startIndex + pagination.pageSize
+    return filteredData.slice(startIndex, endIndex)
+  }, [filteredData, pagination])
 
   const startIndex = pagination ? (pagination.current - 1) * pagination.pageSize : 0
 
@@ -98,6 +178,7 @@ export function EnhancedTable<T extends Record<string, any>>({
       dataIndex: 'actions',
       width: '120px',
       align: 'center' as const,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
       render: (_: any, record: T) => (
         <div className="flex items-center justify-center space-x-2">
           {onView && (
@@ -161,7 +242,7 @@ export function EnhancedTable<T extends Record<string, any>>({
             {/* Botones de exportar */}
             {showExport && (
               <ExportButtons
-                data={data}
+                data={filteredData}
                 columns={columns.map(col => ({
                   title: col.title,
                   dataIndex: col.dataIndex,
@@ -170,7 +251,7 @@ export function EnhancedTable<T extends Record<string, any>>({
                 filename={exportFilename}
                 title={exportTitle}
                 size="sm"
-                disabled={loading || data.length === 0}
+                disabled={loading || filteredData.length === 0}
               />
             )}
           </div>
@@ -178,39 +259,72 @@ export function EnhancedTable<T extends Record<string, any>>({
 
         {/* Filtros */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {/* Búsqueda */}
-            <div className="md:col-span-2">
-              <Input
-                placeholder="Buscar..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                icon={<MagnifyingGlassIcon className="w-5 h-5" />}
-                variant="filled"
+          <div className="space-y-4">
+            {/* Filtros básicos */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Búsqueda */}
+              <div className="md:col-span-2">
+                <Input
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  icon={<MagnifyingGlassIcon className="w-5 h-5" />}
+                  variant="filled"
+                  animate={animate}
+                />
+              </div>
+              
+              {/* Filtro por fecha desde */}
+              <DatePicker
+                placeholder="Fecha desde"
+                value={dateFrom}
+                onChange={setDateFrom}
                 animate={animate}
+                variant="filled"
+                maxDate={dateTo || new Date()}
+              />
+              
+              {/* Filtro por fecha hasta */}
+              <DatePicker
+                placeholder="Fecha hasta"
+                value={dateTo}
+                onChange={setDateTo}
+                animate={animate}
+                variant="filled"
+                minDate={dateFrom}
+                maxDate={new Date()}
               />
             </div>
-            
-            {/* Filtro por fecha desde */}
-            <DatePicker
-              placeholder="Fecha desde"
-              value={dateFrom}
-              onChange={setDateFrom}
-              animate={animate}
-              variant="filled"
-              maxDate={dateTo || new Date()}
-            />
-            
-            {/* Filtro por fecha hasta */}
-            <DatePicker
-              placeholder="Fecha hasta"
-              value={dateTo}
-              onChange={setDateTo}
-              animate={animate}
-              variant="filled"
-              minDate={dateFrom}
-              maxDate={new Date()}
-            />
+
+            {/* Filtros personalizados */}
+            {customFilters.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {customFilters.map((filter) => (
+                  <div key={filter.key}>
+                    {filter.type === 'select' ? (
+                      <CustomSelect
+                        label={filter.label}
+                        value={customFilterValues[filter.key] || ''}
+                        onChange={(value) => setCustomFilterValues(prev => ({ ...prev, [filter.key]: value }))}
+                        options={filter.options || []}
+                        placeholder={filter.placeholder || `Seleccionar ${filter.label.toLowerCase()}`}
+                        variant="filled"
+                        animate={animate}
+                      />
+                    ) : filter.type === 'text' ? (
+                      <Input
+                        label={filter.label}
+                        value={customFilterValues[filter.key] || ''}
+                        onChange={(e) => setCustomFilterValues(prev => ({ ...prev, [filter.key]: e.target.value }))}
+                        placeholder={filter.placeholder || `Buscar por ${filter.label.toLowerCase()}`}
+                        variant="filled"
+                        animate={animate}
+                      />
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -256,7 +370,7 @@ export function EnhancedTable<T extends Record<string, any>>({
           
           {/* Body */}
           <tbody className="bg-white divide-y divide-gray-200">
-            {data.map((record, rowIndex) => (
+            {paginatedData.map((record, rowIndex) => (
               <tr
                 key={record.id || rowIndex}
                 className={cn(
@@ -294,7 +408,7 @@ export function EnhancedTable<T extends Record<string, any>>({
       {pagination && (
         <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Mostrando {startIndex + 1} a {Math.min(startIndex + pagination.pageSize, pagination.total)} de {pagination.total} resultados
+            Mostrando {startIndex + 1} a {Math.min(startIndex + pagination.pageSize, filteredData.length)} de {filteredData.length} resultados
           </div>
           
           <div className="flex items-center space-x-2">
@@ -315,7 +429,7 @@ export function EnhancedTable<T extends Record<string, any>>({
             
             {/* Números de página */}
             <div className="flex space-x-1">
-              {Array.from({ length: Math.min(5, Math.ceil(pagination.total / pagination.pageSize)) }, (_, i) => {
+              {Array.from({ length: Math.min(5, Math.ceil(filteredData.length / pagination.pageSize)) }, (_, i) => {
                 const pageNum = i + 1
                 return (
                   <button

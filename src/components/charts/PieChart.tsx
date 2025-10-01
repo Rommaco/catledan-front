@@ -4,7 +4,7 @@ import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recha
 import { cn } from '@/lib/utils'
 
 interface PieChartProps {
-  data: any[]
+  data: Record<string, unknown>[]
   dataKey: string
   nameKey: string
   title?: string
@@ -52,7 +52,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+            label={(props: { name?: string; percent?: number }) => `${props.name} ${((props.percent || 0) * 100).toFixed(0)}%`}
             outerRadius={80}
             fill="#8884d8"
             dataKey={dataKey}
@@ -74,7 +74,7 @@ export const CustomPieChart: React.FC<PieChartProps> = ({
               fontSize: '14px'
             }}
             labelStyle={{ color: '#1e293b', fontWeight: '600' }}
-            formatter={(value: any, name: any) => [value, nameKey]}
+            formatter={(value: number | string) => [value, nameKey]}
           />
           <Legend
             wrapperStyle={{

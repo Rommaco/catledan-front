@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
 
@@ -46,7 +47,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     return null
   })
   const [showAbove, setShowAbove] = useState(false)
+  const [calendarPosition, setCalendarPosition] = useState({ top: 0, left: 0, width: 0 })
   const datePickerRef = useRef<HTMLDivElement>(null)
+  const calendarRef = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
 
   // Actualizar currentMonth cuando value cambie
   useEffect(() => {
@@ -57,6 +61,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       setSelectedDate(null)
     }
   }, [value])
+
+  // Montar el componente
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const inputVariants = {
     default: 'bg-white border border-gray-200 focus:border-green-500 focus:ring-green-500/20',
@@ -74,6 +83,11 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   // Cerrar dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Verificar si el click fue en el calendario (portal)
+      if (calendarRef.current && calendarRef.current.contains(event.target as Node)) {
+        return // No cerrar si el click fue en el calendario
+      }
+      
       if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
       }
@@ -90,11 +104,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       const viewportHeight = window.innerHeight
       const spaceBelow = viewportHeight - rect.bottom
       const spaceAbove = rect.top
+      const calendarHeight = 400 // Altura estimada del calendario
       
-      // Si hay menos de 400px abajo y más de 400px arriba, mostrar arriba
-      setShowAbove(spaceBelow < 400 && spaceAbove > 400)
+      // Calcular posición del calendario
+      const top = showAbove ? rect.top - calendarHeight - 8 : rect.bottom + 8
+      const left = rect.left
+      const width = rect.width
+      
+      setCalendarPosition({ top, left, width })
+      
+      // Si hay menos espacio abajo que la altura del calendario y más espacio arriba, mostrar arriba
+      setShowAbove(spaceBelow < calendarHeight && spaceAbove > calendarHeight)
     }
-  }, [isOpen])
+  }, [isOpen, showAbove])
 
   // Generar días del mes
   const generateDays = () => {
@@ -149,13 +171,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({
            date.getFullYear() === selectedDate.getFullYear()
   }
 
-  const handleDateSelect = (date: Date) => {
-    if (isDateDisabled(date)) return
+  const handleDateSelect = React.useCallback((date: Date) => {
+    console.log('🗓️ Seleccionando fecha:', date)
+    if (isDateDisabled(date)) {
+      console.log('❌ Fecha deshabilitada')
+      return
+    }
     
     setSelectedDate(date)
     onChange?.(date)
     setIsOpen(false)
-  }
+    console.log('✅ Fecha seleccionada correctamente')
+  }, [onChange])
+
+  // Función para manejar click en fechas que se pasa al portal
+  const handleDateClick = React.useCallback((date: Date) => {
+    handleDateSelect(date)
+  }, [handleDateSelect])
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     // Validar que currentMonth sea válido antes de navegar
@@ -251,12 +283,20 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         )}
         
         {/* Calendar Dropdown */}
-        {isOpen && (
-          <div className={cn(
-            'absolute z-50 w-full bg-white border border-gray-300 rounded-xl shadow-xl p-4',
-            'animate-slide-down backdrop-blur-sm min-h-[350px] max-h-[90vh] overflow-y-auto',
-            showAbove ? 'bottom-full mb-2' : 'mt-2'
-          )}>
+        {isOpen && mounted && createPortal(
+          <div 
+            ref={calendarRef}
+            className={cn(
+              'fixed z-[9999] bg-white border border-gray-300 rounded-xl shadow-2xl p-4',
+              'animate-slide-down backdrop-blur-sm min-h-[400px] max-h-[90vh] overflow-y-auto',
+              'ring-1 ring-black ring-opacity-5'
+            )}
+            style={{
+              top: `${calendarPosition.top}px`,
+              left: `${calendarPosition.left}px`,
+              width: `${Math.max(calendarPosition.width, 320)}px`,
+              maxWidth: '400px'
+            }}>
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <button
@@ -300,7 +340,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                 return (
                   <button
                     key={index}
-                    onClick={() => handleDateSelect(date)}
+                    onClick={() => handleDateClick(date)}
                     disabled={isDisabled}
                     className={cn(
                       'p-3 text-sm rounded-lg transition-all duration-200 font-medium',
@@ -321,13 +361,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             {/* Today Button */}
             <div className="pt-4 border-t border-gray-200">
               <button
-                onClick={() => handleDateSelect(new Date())}
+                onClick={() => handleDateClick(new Date())}
                 className="w-full px-4 py-3 text-sm font-medium text-green-600 hover:bg-green-50 rounded-lg transition-all duration-150 hover:scale-[1.02] border border-green-200 hover:border-green-300"
               >
                 📅 Seleccionar Hoy
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
       

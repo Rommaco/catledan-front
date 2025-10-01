@@ -6,6 +6,7 @@ import { Tabs, TabPane } from '@/components/ui/Tabs'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
+import { TextArea } from '@/components/ui/TextArea'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Switch } from '@/components/ui/Switch'
 import { useConfiguracion } from '@/hooks/configuracion/useConfiguracion'
@@ -82,9 +83,30 @@ function ConfiguracionContent() {
   // Actualizar formularios cuando cambie la configuración
   useEffect(() => {
     if (configuracion) {
-      setEmpresaForm(configuracion.empresa)
-      setUsuarioForm(configuracion.usuario)
-      setSistemaForm(configuracion.sistema)
+      setEmpresaForm(prev => {
+        const newForm = configuracion.empresa
+        // Solo actualizar si realmente cambió
+        if (JSON.stringify(prev) !== JSON.stringify(newForm)) {
+          return newForm
+        }
+        return prev
+      })
+      
+      setUsuarioForm(prev => {
+        const newForm = configuracion.usuario
+        if (JSON.stringify(prev) !== JSON.stringify(newForm)) {
+          return newForm
+        }
+        return prev
+      })
+      
+      setSistemaForm(prev => {
+        const newForm = configuracion.sistema
+        if (JSON.stringify(prev) !== JSON.stringify(newForm)) {
+          return newForm
+        }
+        return prev
+      })
     }
   }, [configuracion])
 
@@ -92,12 +114,12 @@ function ConfiguracionContent() {
     setEmpresaForm(prev => ({ ...prev, [field]: value }))
   }
 
-  const handleUsuarioChange = (field: keyof ConfiguracionUsuario, value: string) => {
-    setUsuarioForm(prev => ({ ...prev, [field]: value }))
+  const handleUsuarioChange = (field: keyof ConfiguracionUsuario, value: string | number) => {
+    setUsuarioForm(prev => ({ ...prev, [field]: value as string }))
   }
 
-  const handleSistemaChange = (field: keyof ConfiguracionSistema, value: any) => {
-    setSistemaForm(prev => ({ ...prev, [field]: value }))
+  const handleSistemaChange = (field: keyof ConfiguracionSistema, value: string | boolean | number) => {
+    setSistemaForm(prev => ({ ...prev, [field]: value as string | boolean }))
   }
 
   const handleNotificacionChange = (field: keyof ConfiguracionSistema['notificaciones'], value: boolean) => {
@@ -272,12 +294,11 @@ function ConfiguracionContent() {
                   />
                 </div>
 
-                <Input
+                <TextArea
                   label="Descripción"
                   value={empresaForm.descripcion}
                   onChange={(e) => handleEmpresaChange('descripcion', e.target.value)}
                   disabled={empresaLoading}
-                  isTextArea
                   rows={3}
                   placeholder="Descripción de la empresa"
                 />

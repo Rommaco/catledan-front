@@ -190,3 +190,5 @@ export const useFinanzaStats = (filters?: FinanzaFilters) => {
 
   return { stats, loadingStats, fetchStats }
 }
+
+

@@ -62,12 +62,12 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
           descripcion: finanza.descripcion,
           monto: finanza.monto,
           estado: finanza.estado,
-          lote: finanza.lote || '',
+          lote: finanza.lote || undefined,
           cantidad: finanza.cantidad || 0,
-          unidad: finanza.unidad || '',
-          proveedor: finanza.proveedor || '',
-          responsable: finanza.responsable || '',
-          observaciones: finanza.observaciones || '',
+          unidad: finanza.unidad || undefined,
+          proveedor: finanza.proveedor || undefined,
+          responsable: finanza.responsable || undefined,
+          observaciones: finanza.observaciones || undefined,
         })
       } else {
         setFormData({
@@ -187,7 +187,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             options={tipoOptions}
             placeholder="Seleccione el tipo"
             error={errors.tipo}
-            required
           />
 
           <CustomSelect
@@ -197,7 +196,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             options={categoriaOptions}
             placeholder="Seleccione la categoría"
             error={errors.categoria}
-            required
           />
         </div>
 
@@ -208,7 +206,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             onChange={(e) => handleInputChange('descripcion', e.target.value)}
             placeholder="Ingrese la descripción"
             error={errors.descripcion}
-            required
           />
 
           <Input
@@ -218,7 +215,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             onChange={(e) => handleInputChange('monto', parseFloat(e.target.value) || 0)}
             placeholder="0.00"
             error={errors.monto}
-            required
           />
         </div>
 
@@ -228,7 +224,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             value={formData.fecha}
             onChange={(date) => handleInputChange('fecha', date)}
             error={errors.fecha}
-            required
           />
 
           <CustomSelect
@@ -238,7 +233,6 @@ export const FinanzaModal: React.FC<FinanzaModalProps> = ({
             options={estadoOptions}
             placeholder="Seleccione el estado"
             error={errors.estado}
-            required
           />
         </div>
 

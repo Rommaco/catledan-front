@@ -170,8 +170,7 @@ function DashboardContent() {
             <StatsCard
               title="Total de Ganado"
               value={resumen.data?.totalGanado?.toString() || '0'}
-              change="+12%"
-              changeType="positive"
+              change={{ value: "+12%", type: "increase" }}
               icon={<UserGroupIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -180,8 +179,7 @@ function DashboardContent() {
             <StatsCard
               title="Ingresos Totales"
               value={`$${resumen.data?.totalIngresos?.toLocaleString() || '0'}`}
-              change="+8%"
-              changeType="positive"
+              change={{ value: "+8%", type: "increase" }}
               icon={<CurrencyDollarIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -190,8 +188,7 @@ function DashboardContent() {
             <StatsCard
               title="Gastos Totales"
               value={`$${resumen.data?.totalGastos?.toLocaleString() || '0'}`}
-              change="-3%"
-              changeType="negative"
+              change={{ value: "-3%", type: "decrease" }}
               icon={<ArrowTrendingDownIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -200,8 +197,7 @@ function DashboardContent() {
             <StatsCard
               title="Reportes"
               value={resumen.data?.totalReportes?.toString() || '0'}
-              change="+5%"
-              changeType="positive"
+              change={{ value: "+5%", type: "increase" }}
               icon={<ChartBarIcon className="w-6 h-6" />}
               animate={true}
             />

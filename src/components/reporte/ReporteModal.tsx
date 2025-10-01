@@ -135,7 +135,6 @@ export const ReporteModal: React.FC<ReporteModalProps> = ({
             onChange={(e) => handleInputChange('titulo', e.target.value)}
             placeholder="Ingrese el título del reporte"
             error={errors.titulo}
-            required
           />
 
           <CustomSelect
@@ -145,7 +144,6 @@ export const ReporteModal: React.FC<ReporteModalProps> = ({
             options={tipoOptions}
             placeholder="Seleccione el tipo"
             error={errors.tipo}
-            required
           />
         </div>
 
@@ -155,7 +153,6 @@ export const ReporteModal: React.FC<ReporteModalProps> = ({
             value={formData.fecha}
             onChange={(date) => handleInputChange('fecha', date)}
             error={errors.fecha}
-            required
           />
         </div>
 

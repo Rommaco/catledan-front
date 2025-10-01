@@ -4,7 +4,7 @@ export interface Reporte {
   titulo: string
   descripcion: string
   tipo: 'reproduccion' | 'salud' | 'produccion' | 'financiero' | 'inventario' | 'sanitario' | 'general'
-  datos: any
+  datos: Record<string, unknown>
   user: string
   createdBy?: {
     _id: string
@@ -20,7 +20,7 @@ export interface CreateReporteData {
   titulo: string
   descripcion: string
   tipo: 'reproduccion' | 'salud' | 'produccion' | 'financiero' | 'inventario' | 'sanitario' | 'general'
-  datos: any
+  datos: Record<string, unknown>
 }
 
 export interface UpdateReporteData {
@@ -28,7 +28,7 @@ export interface UpdateReporteData {
   titulo?: string
   descripcion?: string
   tipo?: 'reproduccion' | 'salud' | 'produccion' | 'financiero' | 'inventario' | 'sanitario' | 'general'
-  datos?: any
+  datos?: Record<string, unknown>
 }
 
 export interface ReporteFormData {
@@ -36,7 +36,7 @@ export interface ReporteFormData {
   titulo: string
   descripcion: string
   tipo: 'reproduccion' | 'salud' | 'produccion' | 'financiero' | 'inventario' | 'sanitario' | 'general'
-  datos: any
+  datos: Record<string, unknown>
 }
 
 export interface ReporteFilters {

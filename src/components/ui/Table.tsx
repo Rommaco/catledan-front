@@ -6,6 +6,7 @@ interface TableColumn<T> {
   key: string
   title: string
   dataIndex: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render?: (value: any, record: T, index: number) => React.ReactNode
   width?: string | number
   align?: 'left' | 'center' | 'right'
@@ -27,7 +28,7 @@ interface TableProps<T> {
   hoverable?: boolean
 }
 
-export function Table<T extends Record<string, any>>({
+export function Table<T = Record<string, unknown>>({
   columns,
   data,
   loading = false,

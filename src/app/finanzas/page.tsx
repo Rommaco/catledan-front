@@ -26,7 +26,6 @@ import {
 import { format } from 'date-fns'
 import {
   PlusIcon,
-  MagnifyingGlassIcon,
   CurrencyDollarIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
@@ -61,57 +60,20 @@ function FinanzasContent() {
   const [finanzaToDelete, setFinanzaToDelete] = useState<Finanza | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Filtros
-  const [searchText, setSearchText] = useState('')
-  const [filterTipo, setFilterTipo] = useState('')
-  const [filterCategoria, setFilterCategoria] = useState('')
-  const [filterEstado, setFilterEstado] = useState('')
-  const [startDate, setStartDate] = useState<Date | null>(null)
-  const [endDate, setEndDate] = useState<Date | null>(null)
-
   // Cargar datos al montar el componente
   useEffect(() => {
     fetchFinanzas({
       page: currentPage,
-      limit: pageSize,
-      search: searchText || undefined,
-      tipo: filterTipo || undefined,
-      categoria: filterCategoria || undefined,
-      estado: filterEstado || undefined,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0],
+      limit: pageSize
     })
-  }, [currentPage, pageSize, searchText, filterTipo, filterCategoria, filterEstado, startDate, endDate, fetchFinanzas])
+  }, [currentPage, pageSize, fetchFinanzas])
 
   const handleRefresh = () => {
     fetchFinanzas({
       page: currentPage,
-      limit: pageSize,
-      search: searchText || undefined,
-      tipo: filterTipo || undefined,
-      categoria: filterCategoria || undefined,
-      estado: filterEstado || undefined,
-      startDate: startDate?.toISOString().split('T')[0],
-      endDate: endDate?.toISOString().split('T')[0],
+      limit: pageSize
     })
   }
-
-  const filteredData = useMemo(() => {
-    if (!data || !Array.isArray(data)) return []
-    
-    return data.filter((finanza) => {
-      const matchesSearch = !searchText || 
-        finanza.descripcion.toLowerCase().includes(searchText.toLowerCase()) ||
-        finanza.proveedor?.toLowerCase().includes(searchText.toLowerCase()) ||
-        finanza.responsable?.toLowerCase().includes(searchText.toLowerCase())
-      
-      const matchesTipo = !filterTipo || finanza.tipo === filterTipo
-      const matchesCategoria = !filterCategoria || finanza.categoria === filterCategoria
-      const matchesEstado = !filterEstado || finanza.estado === filterEstado
-      
-      return matchesSearch && matchesTipo && matchesCategoria && matchesEstado
-    })
-  }, [data, searchText, filterTipo, filterCategoria, filterEstado])
 
   const handleCreateFinanza = () => {
     setSelectedFinanza(null)
@@ -177,7 +139,7 @@ function FinanzasContent() {
       dataIndex: 'tipo',
       render: (tipo: string) => (
         <Badge
-          variant={getTipoColor(tipo) as any}
+          variant={tipo === 'ingreso' ? 'success' : 'error'}
           size="sm"
         >
           {getTipoLabel(tipo)}
@@ -208,7 +170,7 @@ function FinanzasContent() {
       dataIndex: 'estado',
       render: (estado: string) => (
         <Badge
-          variant={getEstadoColor(estado) as any}
+          variant={estado === 'completado' ? 'success' : estado === 'pendiente' ? 'warning' : 'error'}
           size="sm"
         >
           {getEstadoLabel(estado)}
@@ -225,7 +187,7 @@ function FinanzasContent() {
       key: 'createdBy',
       title: 'Creado por',
       dataIndex: 'createdBy',
-      render: (createdBy: any) => (
+      render: (createdBy: { fullName?: string; email?: string } | null | undefined) => (
         <span className="text-sm text-gray-600">
           {createdBy?.fullName || createdBy?.email || 'N/A'}
         </span>
@@ -319,109 +281,11 @@ function FinanzasContent() {
           />
         </div>
 
-        {/* Filtros */}
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Buscar
-              </label>
-              <div className="relative">
-                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Buscar por descripción..."
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo
-              </label>
-              <select
-                value={filterTipo}
-                onChange={(e) => setFilterTipo(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              >
-                <option value="">Todos los tipos</option>
-                {tipoOptions.map((tipo) => (
-                  <option key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Categoría
-              </label>
-              <select
-                value={filterCategoria}
-                onChange={(e) => setFilterCategoria(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              >
-                <option value="">Todas las categorías</option>
-                {categoriaOptions.map((categoria) => (
-                  <option key={categoria.value} value={categoria.value}>
-                    {categoria.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Estado
-              </label>
-              <select
-                value={filterEstado}
-                onChange={(e) => setFilterEstado(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              >
-                <option value="">Todos los estados</option>
-                {estadoOptions.map((estado) => (
-                  <option key={estado.value} value={estado.value}>
-                    {estado.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Inicio
-              </label>
-              <input
-                type="date"
-                value={startDate ? startDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => setStartDate(e.target.value ? new Date(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Fecha Fin
-              </label>
-              <input
-                type="date"
-                value={endDate ? endDate.toISOString().split('T')[0] : ''}
-                onChange={(e) => setEndDate(e.target.value ? new Date(e.target.value) : null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-verde-agro focus:border-verde-agro"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Tabla */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <EnhancedTable
-            data={filteredData}
+            data={data || []}
             columns={columns}
             loading={loading}
             onRefresh={handleRefresh}
@@ -432,10 +296,47 @@ function FinanzasContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: filteredData.length,
-              onChange: setCurrentPage,
-              onPageSizeChange: setPageSize,
+              total: data?.length || 0,
+              onChange: setCurrentPage
             }}
+            customFilters={[
+              {
+                key: 'tipo',
+                label: 'Tipo',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los tipos' },
+                  { value: 'ingreso', label: 'Ingreso' },
+                  { value: 'gasto', label: 'Gasto' }
+                ]
+              },
+              {
+                key: 'categoria',
+                label: 'Categoría',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todas las categorías' },
+                  { value: 'alimentacion', label: 'Alimentación' },
+                  { value: 'veterinario', label: 'Veterinario' },
+                  { value: 'equipos', label: 'Equipos' },
+                  { value: 'mano_obra', label: 'Mano de Obra' },
+                  { value: 'ventas', label: 'Ventas' },
+                  { value: 'subsidios', label: 'Subsidios' },
+                  { value: 'otros', label: 'Otros' }
+                ]
+              },
+              {
+                key: 'estado',
+                label: 'Estado',
+                type: 'select',
+                options: [
+                  { value: '', label: 'Todos los estados' },
+                  { value: 'pendiente', label: 'Pendiente' },
+                  { value: 'completado', label: 'Completado' },
+                  { value: 'cancelado', label: 'Cancelado' }
+                ]
+              }
+            ]}
           />
         </div>
 

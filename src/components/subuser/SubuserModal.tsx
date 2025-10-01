@@ -120,7 +120,7 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
           label="Rol"
           options={ROLES_SUBUSER.map(r => ({ value: r.value, label: r.label }))}
           value={formData.rol}
-          onChange={(value) => handleSelectChange('rol', value)}
+          onChange={(value) => handleSelectChange('rol', value.toString())}
           error={errors.rol}
           disabled={loading}
         />

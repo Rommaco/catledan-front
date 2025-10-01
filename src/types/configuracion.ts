@@ -117,3 +117,5 @@ export const getConfiguracionDefault = (): Configuracion => ({
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()
 })
+
+

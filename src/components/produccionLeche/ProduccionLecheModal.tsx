@@ -58,7 +58,7 @@ export const ProduccionLecheModal: React.FC<ProduccionLecheModalProps> = ({
         setFormData({
           fecha: new Date(produccion.fecha),
           cantidad: produccion.cantidad,
-          observaciones: produccion.observaciones || ''
+          observaciones: produccion.observaciones || undefined
         })
       } else {
         // Resetear para crear nuevo
@@ -133,8 +133,6 @@ export const ProduccionLecheModal: React.FC<ProduccionLecheModalProps> = ({
             value={formData.fecha}
             onChange={(date) => handleInputChange('fecha', date)}
             error={errors.fecha}
-            required
-            icon={<CalendarDaysIcon className="h-4 w-4" />}
           />
         </div>
 
@@ -147,8 +145,6 @@ export const ProduccionLecheModal: React.FC<ProduccionLecheModalProps> = ({
             onChange={(e) => handleInputChange('cantidad', parseFloat(e.target.value) || 0)}
             placeholder="Ej: 25.5"
             error={errors.cantidad}
-            icon={<BeakerIcon className="h-4 w-4" />}
-            required
             min={0}
             max={100}
             step={0.1}
@@ -164,15 +160,13 @@ export const ProduccionLecheModal: React.FC<ProduccionLecheModalProps> = ({
             onChange={(e) => handleInputChange('observaciones', e.target.value)}
             placeholder="Observaciones sobre la producción..."
             error={errors.observaciones}
-            icon={<DocumentTextIcon className="h-4 w-4" />}
-            rows={3}
           />
         </div>
 
         {/* Botones */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
           <Button
-            variant="outline"
+            variant="secondary"
             onClick={onClose}
             disabled={loading}
           >
