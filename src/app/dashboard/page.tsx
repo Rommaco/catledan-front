@@ -170,7 +170,7 @@ function DashboardContent() {
             <StatsCard
               title="Total de Ganado"
               value={resumen.data?.totalGanado?.toString() || '0'}
-              change={{ value: "+12%", type: "increase" }}
+              change={resumen.data?.totalGanado && resumen.data.totalGanado > 0 ? { value: "Datos actuales", type: "neutral" } : { value: "Sin datos", type: "neutral" }}
               icon={<UserGroupIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -179,7 +179,7 @@ function DashboardContent() {
             <StatsCard
               title="Ingresos Totales"
               value={`$${resumen.data?.totalIngresos?.toLocaleString() || '0'}`}
-              change={{ value: "+8%", type: "increase" }}
+              change={resumen.data?.totalIngresos && resumen.data.totalIngresos > 0 ? { value: "Datos actuales", type: "neutral" } : { value: "Sin datos", type: "neutral" }}
               icon={<CurrencyDollarIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -188,7 +188,7 @@ function DashboardContent() {
             <StatsCard
               title="Gastos Totales"
               value={`$${resumen.data?.totalGastos?.toLocaleString() || '0'}`}
-              change={{ value: "-3%", type: "decrease" }}
+              change={resumen.data?.totalGastos && resumen.data.totalGastos > 0 ? { value: "Datos actuales", type: "neutral" } : { value: "Sin datos", type: "neutral" }}
               icon={<ArrowTrendingDownIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -197,7 +197,7 @@ function DashboardContent() {
             <StatsCard
               title="Reportes"
               value={resumen.data?.totalReportes?.toString() || '0'}
-              change={{ value: "+5%", type: "increase" }}
+              change={resumen.data?.totalReportes && resumen.data.totalReportes > 0 ? { value: "Datos actuales", type: "neutral" } : { value: "Sin datos", type: "neutral" }}
               icon={<ChartBarIcon className="w-6 h-6" />}
               animate={true}
             />
