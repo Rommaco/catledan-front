@@ -178,9 +178,11 @@ function LoginContent() {
         <div className="text-center">
           <p className="text-sm text-gray-600">
             ¿No tienes una cuenta?{' '}
-            <Link 
+            <Link
               href="/auth/register"
+              prefetch={true}
               className="text-green-600 hover:text-green-700 font-medium transition-colors duration-200"
+              aria-label="Ir a registro de nueva cuenta"
             >
               Regístrate aquí
             </Link>

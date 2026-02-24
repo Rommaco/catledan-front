@@ -51,20 +51,32 @@ function RegisterContent() {
     }
 
     try {
-      await register({
+      const response = await register({
         fullName: formData.fullName,
         businessName: formData.businessName,
         phone: formData.phone,
         email: formData.email,
         password: formData.password
       })
-      
+      const res = response as { requiresConfirmation?: boolean }
+      if (res?.requiresConfirmation) {
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('pending_verify_email', formData.email)
+          sessionStorage.setItem('pending_verify_password', formData.password)
+        }
+        toast({
+          type: 'success',
+          title: 'Revisa tu correo',
+          message: 'Te enviamos un código de verificación. Ingrésalo en la siguiente pantalla.'
+        })
+        router.push('/auth/verify-email')
+        return
+      }
       toast({
         type: 'success',
         title: '¡Registro exitoso!',
         message: 'Tu cuenta ha sido creada correctamente.'
       })
-      
       router.push('/dashboard')
     } catch (error: unknown) {
       console.error('Register error:', error)
