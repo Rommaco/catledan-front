@@ -136,7 +136,7 @@ function AlertasContent() {
   if (error && !safeData.length && !loading) {
     return (
       <DashboardLayout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <h3 className="text-lg font-medium text-red-800">Error al cargar las alertas</h3>
             <p className="mt-2 text-sm text-red-700">{error}</p>
@@ -151,11 +151,11 @@ function AlertasContent() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Alertas</h1>
-            <p className="text-gray-600">Notificaciones y avisos del sistema</p>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Alertas</h1>
+            <p className="text-sm text-gray-600">Notificaciones y avisos del sistema</p>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">Estado:</span>

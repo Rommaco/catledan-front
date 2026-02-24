@@ -248,16 +248,16 @@ export function EnhancedTable<T = Record<string, unknown>>({
   return (
     <div className={cn('relative rounded-xl border border-gray-200 bg-white shadow-sm', className)}>
       {/* Header con controles: z-10 y overflow-visible para que dropdowns no queden cortados */}
-      <div className="relative z-10 overflow-visible bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-green-100 rounded-lg">
+      <div className="relative z-10 overflow-visible bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 p-4 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="p-2 bg-green-100 rounded-lg flex-shrink-0">
               <TableCellsIcon className="h-5 w-5 text-green-600" />
             </div>
-            <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-slate-900 truncate">{title}</h3>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-shrink-0">
             {/* Botón de actualizar */}
             {showRefresh && (
               <Button
@@ -293,7 +293,7 @@ export function EnhancedTable<T = Record<string, unknown>>({
         {showFilters && (
           <div className="space-y-4">
             {/* Filtros básicos */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               {/* Búsqueda */}
               <div className="md:col-span-2">
                 <Input

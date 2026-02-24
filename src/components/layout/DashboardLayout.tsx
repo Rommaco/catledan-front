@@ -118,16 +118,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar para desktop */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-52 lg:flex-col">
+      {/* Sidebar para desktop - más ancho y texto/iconos más grandes */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-72 lg:flex-col">
         <div className="flex min-h-0 flex-1 flex-col bg-white shadow-lg border-r border-gray-200">
           {/* Logo */}
-          <div className="flex h-12 flex-shrink-0 items-center px-4 border-b border-gray-200">
-            <h1 className="text-base font-bold text-green-600">Catledan SaaS</h1>
+          <div className="flex h-14 flex-shrink-0 items-center px-5 border-b border-gray-200">
+            <img src="/negro-catledan.svg" alt="Catledan SaaS" className="h-10 w-auto object-contain sm:h-12 not-only-of-type:" />
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-0.5 px-3 py-4 overflow-y-auto">
+          <nav className="flex-1 space-y-0.5 px-4 py-4 overflow-y-auto">
             {menuItemsTop.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.key
@@ -137,11 +137,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   href={item.key}
                   onClick={closeSidebar}
                   className={cn(
-                    'group flex w-full items-center px-3 py-1.5 text-xs font-medium rounded-lg',
+                    'group flex w-full items-center px-4 py-2.5 text-sm font-medium rounded-lg',
                     isActive ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100',
                   )}
                 >
-                  <Icon className={cn('mr-2.5 h-4 w-4 flex-shrink-0', isActive ? 'text-green-600' : 'text-gray-400')} />
+                  <Icon className={cn('mr-3 h-5 w-5 flex-shrink-0', isActive ? 'text-green-600' : 'text-gray-400')} />
                   {item.label}
                 </Link>
               )
@@ -153,18 +153,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   type="button"
                   onClick={() => toggleDropdown(dropdown.id)}
                   className={cn(
-                    'flex w-full items-center justify-between px-3 py-1.5 text-xs font-medium rounded-lg',
+                    'flex w-full items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg',
                     isInDropdown(dropdown) ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100',
                   )}
                 >
                   <span className="flex items-center">
-                    <dropdown.icon className={cn('mr-2.5 h-4 w-4', isInDropdown(dropdown) ? 'text-green-600' : 'text-gray-400')} />
+                    <dropdown.icon className={cn('mr-3 h-5 w-5 flex-shrink-0', isInDropdown(dropdown) ? 'text-green-600' : 'text-gray-400')} />
                     {dropdown.label}
                   </span>
-                  {isDropdownOpen(dropdown) ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />}
+                  {isDropdownOpen(dropdown) ? <ChevronDownIcon className="h-4 w-4" /> : <ChevronRightIcon className="h-4 w-4" />}
                 </button>
                 {isDropdownOpen(dropdown) && (
-                  <div className="ml-4 mt-0.5 space-y-0.5 border-l border-gray-200 pl-2">
+                  <div className="ml-5 mt-1 space-y-0.5 border-l border-gray-200 pl-3">
                     {dropdown.items.map((item) => {
                       const Icon = item.icon
                       const isActive = pathname === item.key
@@ -174,11 +174,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                           href={item.key}
                           onClick={closeSidebar}
                           className={cn(
-                            'flex items-center px-2 py-1 text-xs rounded',
+                            'flex items-center px-3 py-2 text-sm rounded',
                             isActive ? 'text-green-600 font-medium' : 'text-gray-600 hover:text-gray-900',
                           )}
                         >
-                          <Icon className="mr-2 h-3.5 w-3.5 flex-shrink-0" />
+                          <Icon className="mr-2.5 h-4 w-4 flex-shrink-0" />
                           {item.label}
                         </Link>
                       )
@@ -196,11 +196,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                   href={item.key}
                   onClick={closeSidebar}
                   className={cn(
-                    'group flex w-full items-center px-3 py-1.5 text-xs font-medium rounded-lg',
+                    'group flex w-full items-center px-4 py-2.5 text-sm font-medium rounded-lg',
                     isActive ? 'bg-green-100 text-green-700' : 'text-gray-700 hover:bg-gray-100',
                   )}
                 >
-                  <Icon className={cn('mr-2.5 h-4 w-4 flex-shrink-0', isActive ? 'text-green-600' : 'text-gray-400')} />
+                  <Icon className={cn('mr-3 h-5 w-5 flex-shrink-0', isActive ? 'text-green-600' : 'text-gray-400')} />
                   {item.label}
                 </Link>
               )
@@ -208,14 +208,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </nav>
 
           {/* User info */}
-          <div className="flex-shrink-0 border-t border-gray-200 p-3">
-            <div className="flex items-center space-x-2">
-              <div className="h-7 w-7 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                <UserGroupIcon className="h-4 w-4 text-green-600" />
+          <div className="flex-shrink-0 border-t border-gray-200 p-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                <UserGroupIcon className="h-5 w-5 text-green-600" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-900 truncate">{user?.fullName}</p>
-                <p className="text-[10px] text-gray-500 truncate">{user?.businessName}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{user?.fullName}</p>
+                <p className="text-xs text-gray-500 truncate">{user?.businessName}</p>
               </div>
             </div>
           </div>
@@ -229,7 +229,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white shadow-xl">
             {/* Header móvil */}
             <div className="flex h-16 items-center justify-between px-6 border-b border-gray-200">
-              <h1 className="text-xl font-bold text-green-600">Catledan SaaS</h1>
+              <h1 className="text-xl font-bold text-green-600 font-display">Catledan SaaS</h1>
               <Button
                 variant="ghost"
                 size="sm"
@@ -308,7 +308,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
       )}
 
       {/* Main content */}
-      <div className="lg:ml-52">
+      <div className="lg:ml-72">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-white shadow-sm border-b border-gray-200">
           <div className="flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -348,8 +348,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1">
+        {/* Page content - scroll horizontal en móvil para tablas */}
+        <main className="flex-1 min-w-0 overflow-x-hidden">
           {children}
         </main>
 

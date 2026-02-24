@@ -139,14 +139,14 @@ function DashboardContent() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header del Dashboard */}
-        <div className="flex items-center justify-between animate-fade-in">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-slide-up">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 animate-slide-up truncate">
               🚀 Dashboard Ganadero
             </h1>
-            <p className="text-gray-600 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <p className="text-sm sm:text-base text-gray-600 animate-slide-up" style={{ animationDelay: '100ms' }}>
               Resumen completo de tu operación ganadera
             </p>
           </div>
@@ -157,7 +157,7 @@ function DashboardContent() {
             loading={isRefreshing}
             icon={<ArrowPathIcon className="w-4 h-4" />}
             animate={true}
-            className="animate-bounce-in"
+            className="animate-bounce-in w-full sm:w-auto self-start sm:self-center"
             style={{ animationDelay: '200ms' }}
           >
             Actualizar
@@ -165,7 +165,7 @@ function DashboardContent() {
         </div>
 
         {/* Estadísticas principales */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
             <StatsCard
               title="Total de Ganado"
@@ -205,9 +205,9 @@ function DashboardContent() {
         </div>
 
         {/* Gráficas */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Finanzas Mensuales */}
-          <AnimatedCard variant="elevated" delay={500} animationType="slide-left" className="p-6">
+          <AnimatedCard variant="elevated" delay={500} animationType="slide-left" className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Finanzas Mensuales
@@ -242,7 +242,7 @@ function DashboardContent() {
           </AnimatedCard>
 
           {/* Ganado por Estado */}
-          <AnimatedCard variant="elevated" delay={600} animationType="slide-right" className="p-6">
+          <AnimatedCard variant="elevated" delay={600} animationType="slide-right" className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Distribución del Ganado
@@ -276,7 +276,7 @@ function DashboardContent() {
           </AnimatedCard>
 
           {/* Producción de Leche */}
-          <AnimatedCard variant="elevated" delay={700} animationType="scale-up" className="p-6">
+          <AnimatedCard variant="elevated" delay={700} animationType="scale-up" className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Producción de Leche
@@ -311,7 +311,7 @@ function DashboardContent() {
           </AnimatedCard>
 
           {/* Cultivos */}
-          <AnimatedCard variant="elevated" delay={800} animationType="bounce-in" className="p-6">
+          <AnimatedCard variant="elevated" delay={800} animationType="bounce-in" className="p-4 sm:p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 Tipos de Cultivos

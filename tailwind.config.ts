@@ -9,47 +9,63 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Paleta Principal - Verde Agro
+        // Paleta Marca Catledan (manual de marca)
         primary: {
-          50: '#f0fdf4',   // Verde muy claro
-          100: '#dcfce7',  // Verde claro
-          200: '#bbf7d0',  // Verde medio claro
-          300: '#86efac',  // Verde medio
-          400: '#4ade80',  // Verde
-          500: '#22c55e',  // Verde Medio
-          600: '#16a34a',  // Verde Agro (principal)
-          700: '#15803d',  // Verde oscuro
-          800: '#166534',  // Verde muy oscuro
-          900: '#14532d',  // Verde extremo
-          950: '#052e16',  // Verde negro
+          50: '#e8f2ef',
+          100: '#d1e5df',
+          200: '#a3cbbe',
+          300: '#75b19e',
+          400: '#47977d',
+          500: '#2d6b56',
+          600: '#194c3a',   // Verde Catledan (principal)
+          700: '#143d2f',
+          800: '#0f2e23',
+          900: '#0a1f18',
+          950: '#05100c',
         },
+        // Acento amarillo/dorado Catledan
+        accent: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbc02d',
+          500: '#fab527',   // Amarillo Catledan (logo)
+          600: '#e5a022',
+          700: '#c78b1e',
+          800: '#a8761a',
+          900: '#8b6216',
+          950: '#5c410f',
+        },
+        // Crema / fondo claro marca
+        cream: '#fffaf0',
         
         // Colores de UI
         background: {
-          primary: '#f8fafc',    // Gris Muy Claro
-          secondary: '#f1f5f9',  // Gris Claro
-          tertiary: '#e2e8f0',   // Gris Medio
+          primary: '#f8fafc',
+          secondary: '#f1f5f9',
+          tertiary: '#e2e8f0',
         },
         
         text: {
-          primary: '#333333',     // Gris Oscuro
-          secondary: '#64748b',   // Gris Medio
-          tertiary: '#94a3b8',    // Gris Claro
+          primary: '#1d1d1b',    // Negro Catledan (logo negro)
+          secondary: '#194c3a',  // Verde para texto secundario
+          tertiary: '#64748b',
         },
         
-        // Colores de Estado
+        // Colores de Estado (alineados a marca donde aplica)
         success: {
-          50: '#ecfdf5',
-          500: '#10b981',    // Verde Brillante
-          600: '#059669',
-          700: '#047857',
+          50: '#e8f2ef',
+          500: '#194c3a',
+          600: '#143d2f',
+          700: '#0f2e23',
         },
         
         warning: {
           50: '#fffbeb',
-          500: '#f59e0b',    // Amarillo
-          600: '#d97706',
-          700: '#b45309',
+          500: '#fab527',   // Amarillo Catledan
+          600: '#e5a022',
+          700: '#c78b1e',
         },
         
         error: {
@@ -74,14 +90,28 @@ const config: Config = {
         
         leche: {
           50: '#fefce8',
-          500: '#eab308',    // Amarillo para leche
+          500: '#eab308',
           600: '#ca8a04',
+        },
+        // Sobrescribir verde por defecto con paleta Catledan (todas las clases green-*)
+        green: {
+          50: '#e8f2ef',
+          100: '#d1e5df',
+          200: '#a3cbbe',
+          300: '#75b19e',
+          400: '#47977d',
+          500: '#2d6b56',
+          600: '#194c3a',   // Verde Catledan
+          700: '#143d2f',
+          800: '#0f2e23',
+          900: '#0a1f18',
+          950: '#05100c',
         },
       },
       
       fontFamily: {
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
-        'display': ['Poppins', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-catledan)', 'Montserrat', 'system-ui', 'sans-serif'],
       },
       
       animation: {
@@ -138,8 +168,8 @@ const config: Config = {
           '50%': { transform: 'translateY(-10px)' },
         },
         glow: {
-          '0%': { boxShadow: '0 0 5px rgba(34, 197, 94, 0.5)' },
-          '100%': { boxShadow: '0 0 20px rgba(34, 197, 94, 0.8)' },
+          '0%': { boxShadow: '0 0 5px rgba(25, 76, 58, 0.5)' },
+          '100%': { boxShadow: '0 0 20px rgba(25, 76, 58, 0.8)' },
         },
         shimmer: {
           '0%': { backgroundPosition: '-200% 0' },
@@ -178,9 +208,9 @@ const config: Config = {
       },
       
       boxShadow: {
-        'glow': '0 0 20px rgba(34, 197, 94, 0.3)',
-        'glow-lg': '0 0 40px rgba(34, 197, 94, 0.4)',
-        'inner-glow': 'inset 0 0 20px rgba(34, 197, 94, 0.2)',
+        'glow': '0 0 20px rgba(25, 76, 58, 0.3)',
+        'glow-lg': '0 0 40px rgba(25, 76, 58, 0.4)',
+        'inner-glow': 'inset 0 0 20px rgba(25, 76, 58, 0.2)',
       },
     },
   },

@@ -555,14 +555,14 @@ function GanadoContent() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between animate-fade-in">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2 animate-slide-up">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+          <div className="min-w-0">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2 animate-slide-up">
               🐄 Gestión de Ganado
             </h1>
-            <p className="text-gray-600 animate-slide-up" style={{ animationDelay: '100ms' }}>
+            <p className="text-sm sm:text-base text-gray-600 animate-slide-up" style={{ animationDelay: '100ms' }}>
               Administra tu inventario ganadero
             </p>
           </div>
@@ -571,7 +571,7 @@ function GanadoContent() {
               onClick={handleCreateGanado}
               variant="primary"
               icon={<PlusIcon className="w-4 h-4" />}
-              className="animate-bounce-in"
+              className="animate-bounce-in w-full sm:w-auto shrink-0"
               style={{ animationDelay: '200ms' }}
             >
               Agregar Ganado

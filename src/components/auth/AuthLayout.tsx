@@ -37,7 +37,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             animate && 'animate-fade-in'
           )}>
             <div className="space-y-4">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold font-display bg-gradient-to-r from-white to-green-100 bg-clip-text text-transparent">
                 Catledan SaaS
               </h1>
               <p className="text-xl text-green-100 leading-relaxed">
@@ -85,7 +85,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             'lg:hidden text-center space-y-2',
             animate && 'animate-slide-down'
           )}>
-            <h1 className="text-3xl font-bold text-green-600">Catledan SaaS</h1>
+            <h1 className="text-3xl font-bold text-green-600 font-display">Catledan SaaS</h1>
             <p className="text-gray-600">Gestión integral de ganadería</p>
           </div>
 
