@@ -4,7 +4,9 @@ import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { CustomSelect } from '@/components/ui/CustomSelect'
-import { Subuser, CreateSubuserData, UpdateSubuserData, ROLES_SUBUSER } from '@/types/subuser'
+import { Subuser, CreateSubuserData, UpdateSubuserData, ROLES_SUBUSER, PERMISOS_SUBUSER } from '@/types/subuser'
+
+const PERMISOS_EDITABLES = PERMISOS_SUBUSER.filter((p) => p.value === 'read' || p.value === 'write')
 
 interface SubuserModalProps {
   isOpen: boolean
@@ -23,7 +25,7 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
   mode,
   loading,
 }) => {
-  const [formData, setFormData] = useState<CreateSubuserData>({
+  const [formData, setFormData] = useState<CreateSubuserData & { permisos?: string[] }>({
     fullName: '',
     email: '',
     rol: 'trabajador',
@@ -33,10 +35,12 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       if (mode === 'edit' && subuser) {
+        const permisosEdit = (subuser.permisos || []).filter((p) => p === 'read' || p === 'write')
         setFormData({
           fullName: subuser.fullName,
           email: subuser.email,
           rol: subuser.permisos.includes('administrativo') ? 'administrativo' : 'trabajador',
+          permisos: permisosEdit.length ? permisosEdit : ['read'],
         })
       } else {
         setFormData({
@@ -64,6 +68,14 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
     }
   }, [errors])
 
+  const togglePermiso = useCallback((value: string) => {
+    setFormData((prev) => {
+      const list = prev.permisos ?? []
+      if (list.includes(value)) return { ...prev, permisos: list.filter((p) => p !== value) }
+      return { ...prev, permisos: [...list, value] }
+    })
+  }, [])
+
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {}
 
@@ -87,8 +99,10 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
     if (!validateForm()) {
       return
     }
-
-    await onSave(formData)
+    const toSave = mode === 'edit'
+      ? { fullName: formData.fullName, email: formData.email, rol: formData.rol, permisos: formData.permisos ?? ['read'] } as UpdateSubuserData
+      : formData as CreateSubuserData
+    await onSave(toSave)
     onClose()
   }
 
@@ -124,6 +138,27 @@ export const SubuserModal: React.FC<SubuserModalProps> = ({
           error={errors.rol}
           disabled={loading}
         />
+
+        {mode === 'edit' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Permisos (módulo Team)</label>
+            <div className="flex flex-wrap gap-3">
+              {PERMISOS_EDITABLES.map((p) => (
+                <label key={p.value} className="inline-flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(formData.permisos ?? []).includes(p.value)}
+                    onChange={() => togglePermiso(p.value)}
+                    disabled={loading}
+                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                  />
+                  <span className="text-sm text-gray-700">{p.label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Lectura: ver listado. Escritura: crear, editar y eliminar.</p>
+          </div>
+        )}
 
         {mode === 'create' && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

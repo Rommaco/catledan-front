@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { EnhancedTable } from '@/components/ui/EnhancedTable'
@@ -10,18 +10,16 @@ import { FinanzaModal } from '@/components/finanza/FinanzaModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useFinanza, useFinanzaStats } from '@/hooks/finanza/useFinanza'
 import { useToast } from '@/hooks/useToast'
-import { 
-  Finanza, 
-  CreateFinanzaData, 
-  UpdateFinanzaData, 
-  TIPOS_FINANZA, 
+import {
+  Finanza,
+  CreateFinanzaData,
+  UpdateFinanzaData,
+  TIPOS_FINANZA,
   ESTADOS_FINANZA,
   CATEGORIAS_INGRESOS,
   CATEGORIAS_GASTOS,
-  getTipoColor, 
   getTipoLabel,
-  getEstadoColor,
-  getEstadoLabel
+  getEstadoLabel,
 } from '@/types/finanza'
 import { format } from 'date-fns'
 import {
@@ -48,7 +46,16 @@ function FinanzasContent() {
     deleteFinanza,
   } = useFinanza()
 
-  const { stats, loadingStats } = useFinanzaStats()
+  const { toast } = useToast()
+  const { stats, loadingStats, fetchStats } = useFinanzaStats()
+  const safeData = Array.isArray(data) ? data : []
+  const formatDate = useCallback((fecha: string | undefined) => {
+    if (!fecha) return 'N/A'
+    const d = new Date(fecha)
+    return Number.isNaN(d.getTime()) ? 'N/A' : format(d, 'dd/MM/yyyy')
+  }, [])
+  const formatMonto = useCallback((monto: number) =>
+    Number.isNaN(Number(monto)) ? '0.00' : Number(monto).toLocaleString('es-MX', { minimumFractionDigits: 2 }), [])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
@@ -60,20 +67,14 @@ function FinanzasContent() {
   const [finanzaToDelete, setFinanzaToDelete] = useState<Finanza | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    fetchFinanzas({
-      page: currentPage,
-      limit: pageSize
-    })
-  }, [currentPage, pageSize, fetchFinanzas])
+  const handleRefresh = useCallback(() => {
+    fetchFinanzas({ page: currentPage, limit: pageSize })
+    fetchStats()
+  }, [fetchFinanzas, fetchStats, currentPage, pageSize])
 
-  const handleRefresh = () => {
-    fetchFinanzas({
-      page: currentPage,
-      limit: pageSize
-    })
-  }
+  useEffect(() => {
+    handleRefresh()
+  }, [handleRefresh])
 
   const handleCreateFinanza = () => {
     setSelectedFinanza(null)
@@ -113,12 +114,18 @@ function FinanzasContent() {
     try {
       if (modalMode === 'create') {
         await addFinanza(dataToSave as CreateFinanzaData)
-      } else {
-        await updateFinanza(selectedFinanza!._id, dataToSave as UpdateFinanzaData)
+      } else if (selectedFinanza) {
+        await updateFinanza(selectedFinanza._id, dataToSave as UpdateFinanzaData)
       }
+      setIsModalOpen(false)
       handleRefresh()
-    } catch (error) {
-      console.error('Error al guardar finanza:', error)
+    } catch (err) {
+      console.error('Error al guardar finanza:', err)
+      toast({
+        type: 'error',
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Error al guardar la transacción.',
+      })
     } finally {
       setModalLoading(false)
     }
@@ -160,7 +167,7 @@ function FinanzasContent() {
       dataIndex: 'monto',
       render: (monto: number, record: Finanza) => (
         <span className={`font-medium ${record.tipo === 'ingreso' ? 'text-green-600' : 'text-red-600'}`}>
-          ${monto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+          ${formatMonto(monto)}
         </span>
       )
     },
@@ -181,7 +188,7 @@ function FinanzasContent() {
       key: 'fecha',
       title: 'Fecha',
       dataIndex: 'fecha',
-      render: (fecha: string) => format(new Date(fecha), 'dd/MM/yyyy')
+      render: (fecha: string) => formatDate(fecha)
     },
     {
       key: 'createdBy',
@@ -193,7 +200,7 @@ function FinanzasContent() {
         </span>
       )
     }
-  ], [])
+  ], [formatDate, formatMonto])
 
   const tipoOptions = TIPOS_FINANZA.map(tipo => ({
     value: tipo.value,
@@ -210,7 +217,7 @@ function FinanzasContent() {
     ...CATEGORIAS_GASTOS.map(cat => ({ value: cat, label: cat }))
   ]
 
-  if (error && !data?.length) {
+  if (error && safeData.length === 0) {
     return (
       <DashboardLayout>
         <div className="p-6">
@@ -253,28 +260,28 @@ function FinanzasContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Balance Total"
-            value={`$${stats.balance.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+            value={`$${formatMonto(stats.balance ?? 0)}`}
             icon={<CurrencyDollarIcon className="w-6 h-6" />}
-            color={stats.balance >= 0 ? 'green' : 'red'}
+            color={(stats.balance ?? 0) >= 0 ? 'green' : 'red'}
             loading={loadingStats}
           />
           <StatsCard
             title="Total Ingresos"
-            value={`$${stats.totalIngresos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+            value={`$${formatMonto(stats.totalIngresos ?? 0)}`}
             icon={<ArrowTrendingUpIcon className="w-6 h-6" />}
             color="green"
             loading={loadingStats}
           />
           <StatsCard
             title="Total Gastos"
-            value={`$${stats.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}
+            value={`$${formatMonto(stats.totalGastos ?? 0)}`}
             icon={<ArrowTrendingDownIcon className="w-6 h-6" />}
             color="red"
             loading={loadingStats}
           />
           <StatsCard
             title="Transacciones"
-            value={stats.transaccionesCompletadas}
+            value={String(stats.transaccionesCompletadas ?? 0)}
             icon={<ChartBarIcon className="w-6 h-6" />}
             color="blue"
             loading={loadingStats}
@@ -285,7 +292,7 @@ function FinanzasContent() {
         {/* Tabla */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <EnhancedTable
-            data={data || []}
+            data={safeData}
             columns={columns}
             loading={loading}
             onRefresh={handleRefresh}
@@ -296,7 +303,7 @@ function FinanzasContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: data?.length || 0,
+              total: total,
               onChange: setCurrentPage
             }}
             customFilters={[

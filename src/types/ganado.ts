@@ -121,7 +121,6 @@ export interface GanadoFilters {
   page?: number;
   limit?: number;
 }
-
 export interface GanadoFormData {
   nombre: string;
   raza: string;
@@ -146,3 +145,4 @@ export interface GanadoFormData {
   proximaVacuna?: string;
   observaciones?: string;
 }
+

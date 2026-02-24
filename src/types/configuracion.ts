@@ -53,10 +53,13 @@ export const IDIOMAS = [
 ] as const
 
 export const ZONAS_HORARIAS = [
+  { value: 'America/Lima', label: 'Perú - Lima (GMT-5)' },
   { value: 'America/Mexico_City', label: 'México (GMT-6)' },
   { value: 'America/New_York', label: 'Nueva York (GMT-5)' },
   { value: 'America/Los_Angeles', label: 'Los Ángeles (GMT-8)' },
   { value: 'America/Chicago', label: 'Chicago (GMT-6)' },
+  { value: 'America/Bogota', label: 'Colombia - Bogotá (GMT-5)' },
+  { value: 'America/Santiago', label: 'Chile - Santiago (GMT-4)' },
   { value: 'Europe/Madrid', label: 'Madrid (GMT+1)' },
   { value: 'Europe/London', label: 'Londres (GMT+0)' }
 ] as const
@@ -69,10 +72,13 @@ export const FORMATOS_FECHA = [
 ] as const
 
 export const MONEDAS = [
-  { value: 'MXN', label: 'Peso Mexicano (MXN)' },
-  { value: 'USD', label: 'Dólar Americano (USD)' },
+  { value: 'PEN', label: 'Sol peruano (PEN)' },
+  { value: 'USD', label: 'Dólar americano (USD)' },
+  { value: 'MXN', label: 'Peso mexicano (MXN)' },
   { value: 'EUR', label: 'Euro (EUR)' },
-  { value: 'CAD', label: 'Dólar Canadiense (CAD)' }
+  { value: 'CAD', label: 'Dólar canadiense (CAD)' },
+  { value: 'COP', label: 'Peso colombiano (COP)' },
+  { value: 'CLP', label: 'Peso chileno (CLP)' }
 ] as const
 
 export const ROLES = [
@@ -102,9 +108,9 @@ export const getConfiguracionDefault = (): Configuracion => ({
   },
   sistema: {
     idioma: 'es',
-    zonaHoraria: 'America/Mexico_City',
+    zonaHoraria: 'America/Lima',
     formatoFecha: 'DD/MM/YYYY',
-    moneda: 'MXN',
+    moneda: 'PEN',
     notificaciones: {
       email: true,
       push: true,

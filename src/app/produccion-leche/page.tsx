@@ -56,8 +56,8 @@ function ProduccionLecheContent() {
   }, [currentPage, pageSize])
 
 
-  // Datos seguros para las estadísticas
-  const safeData = data || []
+  // Datos seguros para las estadísticas (si la API devuelve otro formato, data puede no ser array)
+  const safeData = Array.isArray(data) ? data : []
 
   const handleCreateProduccion = () => {
     setSelectedProduccion(null)
@@ -121,6 +121,10 @@ function ProduccionLecheContent() {
           })
         }
       }
+      setIsModalOpen(false)
+      // Refrescar lista y estadísticas desde el servidor
+      await fetchProduccionLeche({ page: currentPage, limit: pageSize })
+      fetchStats()
     } catch (error) {
       toast({
         type: 'error',
@@ -129,6 +133,7 @@ function ProduccionLecheContent() {
           ? 'Error al registrar la producción de leche'
           : 'Error al actualizar la producción de leche'
       })
+      throw error
     } finally {
       setModalLoading(false)
     }
@@ -143,6 +148,16 @@ function ProduccionLecheContent() {
     fetchStats()
   }
 
+  const formatDate = (value: string | undefined) => {
+    if (!value) return '—'
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('es-ES')
+  }
+  const formatCantidad = (value: unknown) => {
+    const n = Number(value)
+    return Number.isNaN(n) || n < 0 ? '0.0' : n.toFixed(1)
+  }
+
   const columns = [
     {
       key: 'fecha',
@@ -150,7 +165,7 @@ function ProduccionLecheContent() {
       dataIndex: 'fecha',
       render: (fecha: string) => (
         <span className="text-sm font-medium text-gray-900">
-          {new Date(fecha).toLocaleDateString('es-ES')}
+          {formatDate(fecha)}
         </span>
       )
     },
@@ -162,7 +177,7 @@ function ProduccionLecheContent() {
         <div className="flex items-center space-x-2">
           <BeakerIcon className="h-4 w-4 text-blue-500" />
           <span className="font-semibold text-blue-600">
-            {cantidad.toFixed(1)} L
+            {formatCantidad(cantidad)} L
           </span>
         </div>
       )
@@ -183,7 +198,7 @@ function ProduccionLecheContent() {
       dataIndex: 'createdAt',
       render: (createdAt: string) => (
         <span className="text-sm text-gray-500">
-          {new Date(createdAt).toLocaleDateString('es-ES')}
+          {formatDate(createdAt)}
         </span>
       )
     },
@@ -235,56 +250,53 @@ function ProduccionLecheContent() {
         </div>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
-            <StatsCard
-              title="Total Registros"
-              value={safeData.length.toString()}
-              icon={<ChartBarIcon className="w-6 h-6" />}
-              animate={true}
-            />
-          </div>
-          
-          <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
-            <StatsCard
-              title="Total Litros"
-              value={safeData.reduce((sum, p) => sum + p.cantidad, 0).toFixed(1)}
-              icon={<BeakerIcon className="w-6 h-6" />}
-              animate={true}
-            />
-          </div>
-          
-          <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
-            <StatsCard
-              title="Promedio Diario"
-              value={safeData.length > 0 
-                ? (safeData.reduce((sum, p) => sum + p.cantidad, 0) / safeData.length).toFixed(1)
-                : '0.0'
-              }
-              icon={<ArrowTrendingUpIcon className="w-6 h-6" />}
-              animate={true}
-            />
-          </div>
-          
-          <div className="animate-fade-in" style={{ animationDelay: '600ms' }}>
-            <StatsCard
-              title="Último Registro"
-              value={safeData.length > 0 
-                ? new Date(safeData[safeData.length - 1].fecha).toLocaleDateString('es-ES')
-                : 'N/A'
-              }
-              icon={<CalendarDaysIcon className="w-6 h-6" />}
-              animate={true}
-            />
-          </div>
-        </div>
+        {(() => {
+          const totalLitros = safeData.reduce((sum, p) => sum + (Number(p.cantidad) || 0), 0)
+          const ultimaFecha = safeData.length > 0 ? safeData[safeData.length - 1]?.fecha : ''
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="animate-fade-in" style={{ animationDelay: '300ms' }}>
+                <StatsCard
+                  title="Total Registros"
+                  value={safeData.length.toString()}
+                  icon={<ChartBarIcon className="w-6 h-6" />}
+                  animate={true}
+                />
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
+                <StatsCard
+                  title="Total Litros"
+                  value={totalLitros.toFixed(1)}
+                  icon={<BeakerIcon className="w-6 h-6" />}
+                  animate={true}
+                />
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '500ms' }}>
+                <StatsCard
+                  title="Promedio Diario"
+                  value={safeData.length > 0 ? (totalLitros / safeData.length).toFixed(1) : '0.0'}
+                  icon={<ArrowTrendingUpIcon className="w-6 h-6" />}
+                  animate={true}
+                />
+              </div>
+              <div className="animate-fade-in" style={{ animationDelay: '600ms' }}>
+                <StatsCard
+                  title="Último Registro"
+                  value={formatDate(ultimaFecha) || 'N/A'}
+                  icon={<CalendarDaysIcon className="w-6 h-6" />}
+                  animate={true}
+                />
+              </div>
+            </div>
+          )
+        })()}
 
 
         {/* Tabla */}
         <div className="animate-fade-in" style={{ animationDelay: '800ms' }}>
           <EnhancedTable
             columns={columns}
-            data={data || []}
+            data={safeData}
             loading={loading}
             exportFilename="produccion-leche"
             exportTitle="Reporte de Producción de Leche"
@@ -294,7 +306,7 @@ function ProduccionLecheContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: data?.length || 0,
+              total: total ?? safeData.length,
               onChange: setCurrentPage
             }}
           />

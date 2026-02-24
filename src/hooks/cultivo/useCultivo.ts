@@ -166,7 +166,7 @@ export const useCultivoStats = (filters?: CultivoFilters) => {
       toast({
         type: 'error',
         title: 'Error',
-        message: 'Error al cargar las estadísticas de cultivos.',
+        message: err instanceof Error ? err.message : 'Error al cargar las estadísticas de cultivos.',
       })
       setStats({
         total: 0,
@@ -179,9 +179,6 @@ export const useCultivoStats = (filters?: CultivoFilters) => {
     }
   }, [toast])
 
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats, filters])
-
+  // No hacemos fetch automático aquí: la página llama fetchStats vía handleRefresh (mount + después de crear/editar/eliminar)
   return { stats, loadingStats, fetchStats }
 }

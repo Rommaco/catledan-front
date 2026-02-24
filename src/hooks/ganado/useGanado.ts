@@ -46,15 +46,16 @@ export const useGanado = () => {
       //   return
       // }
       
-      // Cargar del servidor NORMALMENTE
+      const page = filters?.page ?? currentPage
+      const limit = filters?.limit ?? pageSize
       const response = await ganadoService.getAll({
         ...filters,
-        page: currentPage,
-        limit: pageSize
+        page,
+        limit
       })
-      
-      setData(response.data)
-      setTotal(response.total)
+      setData(Array.isArray(response.data) ? response.data : [])
+      setTotal(typeof response.total === 'number' ? response.total : 0)
+      if (filters?.page != null) setCurrentPage(filters.page)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido')
     } finally {
@@ -163,22 +164,49 @@ export const useGanado = () => {
     fetchGanado()
   }, [fetchGanado])
 
-  // Cargar datos al montar el componente
+  const fetchByIdOrSearch = useCallback(async (idOrCode: string) => {
+    const trimmed = (idOrCode || '').trim()
+    if (!trimmed) {
+      fetchGanado()
+      return
+    }
+    try {
+      setLoading(true)
+      setError(null)
+      const isMongoId = /^[a-fA-F0-9]{24}$/.test(trimmed)
+      if (isMongoId) {
+        const ganado = await ganadoService.getById(trimmed)
+        setData([ganado])
+        setTotal(1)
+        setCurrentPage(1)
+      } else {
+        const response = await ganadoService.getAll({ search: trimmed, page: 1, limit: pageSize })
+        setData(Array.isArray(response.data) ? response.data : [])
+        setTotal(typeof response.total === 'number' ? response.total : 0)
+        setCurrentPage(1)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ganado no encontrado')
+      setData([])
+      setTotal(0)
+    } finally {
+      setLoading(false)
+    }
+  }, [pageSize, fetchGanado])
+
   useEffect(() => {
     fetchGanado()
   }, [fetchGanado])
 
   return {
-    // Estado
     loading,
     error,
     data,
     total,
     currentPage,
     pageSize,
-    
-    // Acciones
     fetchGanado,
+    fetchByIdOrSearch,
     createGanado,
     updateGanado,
     deleteGanado,

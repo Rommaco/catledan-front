@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from '@/lib/api/config'
 import {
   Finanza,
   CreateFinanzaData,
@@ -7,16 +8,52 @@ import {
   FinanzaStats,
 } from '@/types/finanza'
 
-class FinanzaService {
-  private baseUrl: string
+/** Respuesta cruda del backend: { success, data?, error? } */
+interface ApiBody<T = unknown> {
+  success?: boolean
+  data?: T
+  error?: { message?: string }
+}
 
-  constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+function toFechaISO(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') {
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? '' : d.toISOString()
   }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? '' : value.toISOString()
+  return ''
+}
 
+function toFinanza(raw: Record<string, unknown>): Finanza {
+  const id = String(raw._id ?? raw.id ?? '')
+  const monto = Number(raw.monto)
+  return {
+    _id: id,
+    user: String(raw.user ?? raw.userId ?? ''),
+    fecha: toFechaISO(raw.fecha),
+    tipo: (raw.tipo as Finanza['tipo']) ?? 'gasto',
+    categoria: String(raw.categoria ?? ''),
+    descripcion: String(raw.descripcion ?? ''),
+    monto: Number.isNaN(monto) ? 0 : monto,
+    estado: (raw.estado as Finanza['estado']) ?? 'pendiente',
+    lote: raw.lote != null ? String(raw.lote) : undefined,
+    cantidad: raw.cantidad != null ? Number(raw.cantidad) : undefined,
+    unidad: raw.unidad != null ? String(raw.unidad) : undefined,
+    proveedor: raw.proveedor != null ? String(raw.proveedor) : undefined,
+    responsable: raw.responsable != null ? String(raw.responsable) : undefined,
+    observaciones: raw.observaciones != null ? String(raw.observaciones) : undefined,
+    createdBy: raw.createdBy != null ? (raw.createdBy as Finanza['createdBy']) : undefined,
+    createdAt: toFechaISO(raw.createdAt),
+    updatedAt: toFechaISO(raw.updatedAt),
+  }
+}
+
+class FinanzaService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const token = localStorage.getItem('auth_token')
-
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    const url = `${getApiBaseUrl()}/finanzas${endpoint}`
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -25,113 +62,103 @@ class FinanzaService {
       },
       ...options,
     }
-
-    const response = await fetch(`${this.baseUrl}/finanzas${endpoint}`, config)
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `Error en la solicitud: ${response.status}`)
-    }
-
-    return response.json()
+    const response = await fetch(url, config)
+    const json = (await response.json().catch(() => ({}))) as ApiBody<T>
+    const errMsg =
+      json?.error?.message ?? (json as { message?: string })?.message ?? `Error: ${response.status}`
+    if (!response.ok) throw new Error(errMsg)
+    if (json.success === false) throw new Error(errMsg || 'Error en el servidor')
+    return (json.data ?? {}) as T
   }
 
+  /** GET /finanzas — Listar (backend devuelve { success, data: { data: items[], total } }) */
   async getAll(filters?: FinanzaFilters): Promise<FinanzaResponse> {
     const queryParams = new URLSearchParams()
+    queryParams.set('page', String(filters?.page ?? 1))
+    queryParams.set('limit', String(Math.min(filters?.limit ?? 20, 100)))
     if (filters?.search) queryParams.append('search', filters.search)
     if (filters?.tipo) queryParams.append('tipo', filters.tipo)
     if (filters?.categoria) queryParams.append('categoria', filters.categoria)
     if (filters?.estado) queryParams.append('estado', filters.estado)
     if (filters?.startDate) queryParams.append('startDate', filters.startDate)
     if (filters?.endDate) queryParams.append('endDate', filters.endDate)
-    if (filters?.page) queryParams.append('page', filters.page.toString())
-    if (filters?.limit) queryParams.append('limit', filters.limit.toString())
-
-    const endpoint = `?${queryParams.toString()}`
-    return this.request<FinanzaResponse>(endpoint)
+    const qs = queryParams.toString()
+    const raw = await this.request<{ data?: unknown[]; total?: number }>(`?${qs}`)
+    const list = Array.isArray(raw?.data) ? raw.data : []
+    const total = typeof raw?.total === 'number' ? raw.total : list.length
+    const limit = Math.min(filters?.limit ?? 20, 100)
+    const page = filters?.page ?? 1
+    return {
+      data: list.map((item) => toFinanza(item as Record<string, unknown>)),
+      total,
+      page,
+      pages: Math.ceil(total / limit) || 1,
+    }
   }
 
   async getById(id: string): Promise<Finanza> {
-    return this.request<Finanza>(`/${id}`)
+    const raw = await this.request<Record<string, unknown>>(`/${id}`)
+    return toFinanza(raw ?? {})
   }
 
   async create(data: CreateFinanzaData): Promise<Finanza> {
-    return this.request<Finanza>('/', {
+    const raw = await this.request<Record<string, unknown>>('/', {
       method: 'POST',
       body: JSON.stringify(data),
     })
+    return toFinanza(raw ?? {})
   }
 
   async update(id: string, data: UpdateFinanzaData): Promise<Finanza> {
-    return this.request<Finanza>(`/${id}`, {
+    const raw = await this.request<Record<string, unknown>>(`/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     })
+    return toFinanza(raw ?? {})
   }
 
   async delete(id: string): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/${id}`, {
-      method: 'DELETE',
-    })
+    await this.request<unknown>(`/${id}`, { method: 'DELETE' })
+    return { message: 'Eliminado' }
   }
 
+  /** Estadísticas derivadas del listado (backend limit máx 100) */
   async getStats(): Promise<FinanzaStats> {
-    try {
-      // Obtener todas las finanzas para calcular estadísticas
-      const response = await this.getAll({ limit: 1000 })
-      const finanzas = response.data
-
-      // Calcular estadísticas - incluir todas las transacciones, no solo las completadas
-      const totalIngresos = finanzas
-        .filter(f => f.tipo === 'ingreso')
-        .reduce((sum, f) => sum + f.monto, 0)
-
-      const totalGastos = finanzas
-        .filter(f => f.tipo === 'gasto')
-        .reduce((sum, f) => sum + f.monto, 0)
-
-      const balance = totalIngresos - totalGastos
-
-      const transaccionesCompletadas = finanzas.filter(f => f.estado === 'completado').length
-      const transaccionesPendientes = finanzas.filter(f => f.estado === 'pendiente').length
-      const transaccionesCanceladas = finanzas.filter(f => f.estado === 'cancelado').length
-
-      const ingresosPorCategoria = finanzas
-        .filter(f => f.tipo === 'ingreso')
-        .reduce((acc: Record<string, number>, finanza) => {
-          acc[finanza.categoria] = (acc[finanza.categoria] || 0) + finanza.monto
-          return acc
-        }, {})
-
-      const gastosPorCategoria = finanzas
-        .filter(f => f.tipo === 'gasto')
-        .reduce((acc: Record<string, number>, finanza) => {
-          acc[finanza.categoria] = (acc[finanza.categoria] || 0) + finanza.monto
-          return acc
-        }, {})
-
-      return {
-        totalIngresos,
-        totalGastos,
-        balance,
-        transaccionesCompletadas,
-        transaccionesPendientes,
-        transaccionesCanceladas,
-        ingresosPorCategoria,
-        gastosPorCategoria,
-      }
-    } catch (error) {
-      console.error('Error al obtener estadísticas de finanzas:', error)
-      return {
-        totalIngresos: 0,
-        totalGastos: 0,
-        balance: 0,
-        transaccionesCompletadas: 0,
-        transaccionesPendientes: 0,
-        transaccionesCanceladas: 0,
-        ingresosPorCategoria: {},
-        gastosPorCategoria: {},
-      }
+    const { data } = await this.getAll({ page: 1, limit: 100 })
+    const list = Array.isArray(data) ? data : []
+    const totalIngresos = list
+      .filter((f) => f.tipo === 'ingreso')
+      .reduce((sum, f) => sum + (Number(f.monto) || 0), 0)
+    const totalGastos = list
+      .filter((f) => f.tipo === 'gasto')
+      .reduce((sum, f) => sum + (Number(f.monto) || 0), 0)
+    const balance = totalIngresos - totalGastos
+    const transaccionesCompletadas = list.filter((f) => f.estado === 'completado').length
+    const transaccionesPendientes = list.filter((f) => f.estado === 'pendiente').length
+    const transaccionesCanceladas = list.filter((f) => f.estado === 'cancelado').length
+    const ingresosPorCategoria = list
+      .filter((f) => f.tipo === 'ingreso')
+      .reduce((acc: Record<string, number>, f) => {
+        const c = String(f.categoria || '')
+        acc[c] = (acc[c] || 0) + (Number(f.monto) || 0)
+        return acc
+      }, {})
+    const gastosPorCategoria = list
+      .filter((f) => f.tipo === 'gasto')
+      .reduce((acc: Record<string, number>, f) => {
+        const c = String(f.categoria || '')
+        acc[c] = (acc[c] || 0) + (Number(f.monto) || 0)
+        return acc
+      }, {})
+    return {
+      totalIngresos,
+      totalGastos,
+      balance,
+      transaccionesCompletadas,
+      transaccionesPendientes,
+      transaccionesCanceladas,
+      ingresosPorCategoria,
+      gastosPorCategoria,
     }
   }
 }

@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { DashboardLayout } from '@/components/layout/DashboardLayout'
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute'
 import { EnhancedTable } from '@/components/ui/EnhancedTable'
@@ -10,16 +10,9 @@ import { ReporteModal } from '@/components/reporte/ReporteModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 import { useReporte, useReporteStats } from '@/hooks/reporte/useReporte'
 import { useToast } from '@/hooks/useToast'
-import { Reporte, CreateReporteData, UpdateReporteData, TIPOS_REPORTE, getTipoColor, getTipoLabel } from '@/types/reporte'
+import { Reporte, CreateReporteData, UpdateReporteData, TIPOS_REPORTE, getTipoLabel } from '@/types/reporte'
 import { format } from 'date-fns'
-import {
-  PlusIcon,
-  DocumentTextIcon,
-  ChartBarIcon,
-  EyeIcon,
-  PencilIcon,
-  TrashIcon,
-} from '@heroicons/react/24/outline'
+import { PlusIcon, DocumentTextIcon, ChartBarIcon } from '@heroicons/react/24/outline'
 
 function ReportesContent() {
   const {
@@ -37,7 +30,15 @@ function ReportesContent() {
     deleteReporte,
   } = useReporte()
 
-  const { stats, loadingStats } = useReporteStats()
+  const { toast } = useToast()
+  const { stats, loadingStats, fetchStats } = useReporteStats()
+  const safeData = Array.isArray(data) ? data : []
+
+  const formatDate = useCallback((fecha: string | undefined) => {
+    if (!fecha) return 'N/A'
+    const d = new Date(fecha)
+    return Number.isNaN(d.getTime()) ? 'N/A' : format(d, 'dd/MM/yyyy')
+  }, [])
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
@@ -49,20 +50,14 @@ function ReportesContent() {
   const [reporteToDelete, setReporteToDelete] = useState<Reporte | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Cargar datos al montar el componente
-  useEffect(() => {
-    fetchReportes({
-      page: currentPage,
-      limit: pageSize
-    })
-  }, [currentPage, pageSize, fetchReportes])
+  const handleRefresh = useCallback(() => {
+    fetchReportes({ page: currentPage, limit: pageSize })
+    fetchStats()
+  }, [fetchReportes, fetchStats, currentPage, pageSize])
 
-  const handleRefresh = () => {
-    fetchReportes({
-      page: currentPage,
-      limit: pageSize
-    })
-  }
+  useEffect(() => {
+    handleRefresh()
+  }, [handleRefresh])
 
   const handleCreateReporte = () => {
     setSelectedReporte(null)
@@ -102,12 +97,18 @@ function ReportesContent() {
     try {
       if (modalMode === 'create') {
         await addReporte(dataToSave as CreateReporteData)
-      } else {
-        await updateReporte(selectedReporte!._id, dataToSave as UpdateReporteData)
+      } else if (selectedReporte) {
+        await updateReporte(selectedReporte._id, dataToSave as UpdateReporteData)
       }
+      setIsModalOpen(false)
       handleRefresh()
-    } catch (error) {
-      console.error('Error al guardar reporte:', error)
+    } catch (err) {
+      console.error('Error al guardar reporte:', err)
+      toast({
+        type: 'error',
+        title: 'Error',
+        message: err instanceof Error ? err.message : 'Error al guardar el reporte.',
+      })
     } finally {
       setModalLoading(false)
     }
@@ -139,7 +140,7 @@ function ReportesContent() {
       key: 'fecha',
       title: 'Fecha',
       dataIndex: 'fecha',
-      render: (fecha: string) => format(new Date(fecha), 'dd/MM/yyyy')
+      render: (fecha: string) => formatDate(fecha)
     },
     {
       key: 'descripcion',
@@ -161,14 +162,14 @@ function ReportesContent() {
         </span>
       )
     }
-  ], [])
+  ], [formatDate])
 
   const tipoOptions = TIPOS_REPORTE.map(tipo => ({
     value: tipo.value,
     label: tipo.label,
   }))
 
-  if (error && !data?.length) {
+  if (error && safeData.length === 0) {
     return (
       <DashboardLayout>
         <div className="p-6">
@@ -211,28 +212,28 @@ function ReportesContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatsCard
             title="Total Reportes"
-            value={stats.totalReportes}
+            value={String(stats.totalReportes ?? 0)}
             icon={<DocumentTextIcon className="w-6 h-6" />}
             color="blue"
             loading={loadingStats}
           />
           <StatsCard
             title="Reportes de Producción"
-            value={stats.reportesPorTipo.produccion || 0}
+            value={String(stats.reportesPorTipo?.produccion ?? 0)}
             icon={<ChartBarIcon className="w-6 h-6" />}
             color="green"
             loading={loadingStats}
           />
           <StatsCard
             title="Reportes de Salud"
-            value={stats.reportesPorTipo.salud || 0}
+            value={String(stats.reportesPorTipo?.salud ?? 0)}
             icon={<ChartBarIcon className="w-6 h-6" />}
             color="red"
             loading={loadingStats}
           />
           <StatsCard
             title="Reportes Financieros"
-            value={stats.reportesPorTipo.financiero || 0}
+            value={String(stats.reportesPorTipo?.financiero ?? 0)}
             icon={<ChartBarIcon className="w-6 h-6" />}
             color="purple"
             loading={loadingStats}
@@ -243,7 +244,7 @@ function ReportesContent() {
         {/* Tabla */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <EnhancedTable
-            data={data || []}
+            data={safeData}
             columns={columns}
             loading={loading}
             onRefresh={handleRefresh}
@@ -254,25 +255,9 @@ function ReportesContent() {
             pagination={{
               current: currentPage,
               pageSize: pageSize,
-              total: data?.length || 0,
+              total: total,
               onChange: setCurrentPage
             }}
-            customFilters={[
-              {
-                key: 'tipo',
-                label: 'Tipo de Reporte',
-                type: 'select',
-                options: [
-                  { value: '', label: 'Todos los tipos' },
-                  { value: 'produccion', label: 'Producción' },
-                  { value: 'financiero', label: 'Financiero' },
-                  { value: 'inventario', label: 'Inventario' },
-                  { value: 'sanitario', label: 'Sanitario' },
-                  { value: 'reproductivo', label: 'Reproductivo' },
-                  { value: 'nutricional', label: 'Nutricional' }
-                ]
-              }
-            ]}
           />
         </div>
 

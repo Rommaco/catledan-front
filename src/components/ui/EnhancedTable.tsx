@@ -12,6 +12,8 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  KeyIcon,
+  ShieldCheckIcon,
   CalendarIcon
 } from '@heroicons/react/24/outline'
 import { DatePicker } from './DatePicker'
@@ -69,9 +71,13 @@ interface TableProps<T> {
   onView?: (record: T) => void
   onEdit?: (record: T) => void
   onDelete?: (record: T) => void
+  onResetPassword?: (record: T) => void
+  onEditPermissions?: (record: T) => void
   exportFilename?: string
   exportTitle?: string
   customFilters?: CustomFilter[]
+  /** Si true, los datos ya vienen paginados del servidor; no se hace slice y se usa pagination.total para el total */
+  serverSidePagination?: boolean
 }
 
 export function EnhancedTable<T = Record<string, unknown>>({
@@ -94,9 +100,12 @@ export function EnhancedTable<T = Record<string, unknown>>({
   onView,
   onEdit,
   onDelete,
+  onResetPassword,
+  onEditPermissions,
   exportFilename = 'reporte',
   exportTitle = 'Reporte de Datos',
-  customFilters = []
+  customFilters = [],
+  serverSidePagination = false,
 }: TableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFrom, setDateFrom] = useState<Date | null>(null)
@@ -104,9 +113,11 @@ export function EnhancedTable<T = Record<string, unknown>>({
   const [selectedFilter, setSelectedFilter] = useState<string>('')
   const [customFilterValues, setCustomFilterValues] = useState<Record<string, string>>({})
 
+  const safeData = Array.isArray(data) ? data : []
+
   // Filtrar datos
   const filteredData = React.useMemo(() => {
-    let filtered = data
+    let filtered = safeData
 
     // Filtro por búsqueda
     if (searchTerm) {
@@ -156,18 +167,21 @@ export function EnhancedTable<T = Record<string, unknown>>({
     })
 
     return filtered
-  }, [data, searchTerm, dateFrom, dateTo, customFilterValues, customFilters])
+  }, [safeData, searchTerm, dateFrom, dateTo, customFilterValues, customFilters])
 
-  // Paginación de datos filtrados
+  // Paginación de datos filtrados (siempre devolver array)
   const paginatedData = React.useMemo(() => {
-    if (!pagination) return filteredData
-    
+    const list = Array.isArray(filteredData) ? filteredData : []
+    if (!pagination) return list
+    if (serverSidePagination) return list
     const startIndex = (pagination.current - 1) * pagination.pageSize
     const endIndex = startIndex + pagination.pageSize
-    return filteredData.slice(startIndex, endIndex)
-  }, [filteredData, pagination])
+    return list.slice(startIndex, endIndex)
+  }, [filteredData, pagination, serverSidePagination])
 
   const startIndex = pagination ? (pagination.current - 1) * pagination.pageSize : 0
+  const totalForDisplay = (pagination && serverSidePagination) ? pagination.total : filteredData.length
+  const totalPages = pagination ? Math.ceil(totalForDisplay / pagination.pageSize) : 0
 
   // Agregar columna de acciones si está habilitada
   const tableColumns = showActions ? [
@@ -199,6 +213,24 @@ export function EnhancedTable<T = Record<string, unknown>>({
               <PencilIcon className="h-4 w-4" />
             </button>
           )}
+          {onResetPassword && (
+            <button
+              onClick={() => onResetPassword(record)}
+              className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-md transition-all duration-200 hover:scale-110"
+              title="Cambiar contraseña"
+            >
+              <KeyIcon className="h-4 w-4" />
+            </button>
+          )}
+          {onEditPermissions && (
+            <button
+              onClick={() => onEditPermissions(record)}
+              className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-all duration-200 hover:scale-110"
+              title="Permisos"
+            >
+              <ShieldCheckIcon className="h-4 w-4" />
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={() => onDelete(record)}
@@ -214,9 +246,9 @@ export function EnhancedTable<T = Record<string, unknown>>({
   ] : columns
 
   return (
-    <div className={cn('relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm', className)}>
-      {/* Header con controles */}
-      <div className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 p-6">
+    <div className={cn('relative rounded-xl border border-gray-200 bg-white shadow-sm', className)}>
+      {/* Header con controles: z-10 y overflow-visible para que dropdowns no queden cortados */}
+      <div className="relative z-10 overflow-visible bg-gradient-to-r from-gray-50 to-white border-b border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="p-2 bg-green-100 rounded-lg">
@@ -296,11 +328,11 @@ export function EnhancedTable<T = Record<string, unknown>>({
               />
             </div>
 
-            {/* Filtros personalizados */}
+            {/* Filtros personalizados: contenedor con z-index para que el dropdown no tape la tabla */}
             {customFilters.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="relative z-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {customFilters.map((filter) => (
-                  <div key={filter.key}>
+                  <div key={filter.key} className="relative z-20">
                     {filter.type === 'select' ? (
                       <CustomSelect
                         label={filter.label}
@@ -329,6 +361,8 @@ export function EnhancedTable<T = Record<string, unknown>>({
         )}
       </div>
 
+      {/* Tabla: zona separada para que no se solape con filtros */}
+      <div className="relative overflow-x-auto rounded-b-xl">
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
@@ -408,7 +442,7 @@ export function EnhancedTable<T = Record<string, unknown>>({
       {pagination && (
         <div className="bg-white px-6 py-4 border-t border-gray-200 flex items-center justify-between">
           <div className="text-sm text-gray-700">
-            Mostrando {startIndex + 1} a {Math.min(startIndex + pagination.pageSize, filteredData.length)} de {filteredData.length} resultados
+            Mostrando {startIndex + 1} a {Math.min(startIndex + pagination.pageSize, totalForDisplay)} de {totalForDisplay} resultados
           </div>
           
           <div className="flex items-center space-x-2">
@@ -429,7 +463,7 @@ export function EnhancedTable<T = Record<string, unknown>>({
             
             {/* Números de página */}
             <div className="flex space-x-1">
-              {Array.from({ length: Math.min(5, Math.ceil(filteredData.length / pagination.pageSize)) }, (_, i) => {
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 const pageNum = i + 1
                 return (
                   <button
@@ -450,11 +484,11 @@ export function EnhancedTable<T = Record<string, unknown>>({
             </div>
             
             <button
-              onClick={() => pagination.onChange(Math.min(Math.ceil(pagination.total / pagination.pageSize), pagination.current + 1), pagination.pageSize)}
-              disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+              onClick={() => pagination.onChange(Math.min(totalPages, pagination.current + 1), pagination.pageSize)}
+              disabled={pagination.current >= totalPages}
               className={cn(
                 'p-2 rounded-md transition-all duration-200',
-                pagination.current >= Math.ceil(pagination.total / pagination.pageSize)
+                pagination.current >= totalPages
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-300',
                 animate && 'hover:scale-105'
@@ -465,6 +499,7 @@ export function EnhancedTable<T = Record<string, unknown>>({
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

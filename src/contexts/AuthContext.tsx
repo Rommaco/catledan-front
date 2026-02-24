@@ -46,8 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             isLoading: false,
           })
         }
-      } catch (error) {
-        console.error('Error verifying token:', error)
+      } catch {
         authService.removeToken()
         setAuthState({
           user: null,
@@ -88,21 +87,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (data: RegisterData) => {
     try {
       const response = await authService.register(data)
-      authService.setToken(response.token)
-      
-      // Si la respuesta incluye el usuario, lo usamos; si no, lo obtenemos
-      let user = response.user
+      const res = response as { requiresConfirmation?: boolean; token?: string; user?: User }
+
+      // Si requiere confirmación de correo, devolvemos sin autenticar
+      if (res?.requiresConfirmation) {
+        return response
+      }
+
+      authService.setToken(res.token ?? '')
+      let user = res.user
       if (!user) {
         user = await authService.verifyToken()
       }
 
       setAuthState({
         user,
-        token: response.token,
+        token: res.token ?? null,
         isAuthenticated: true,
         isLoading: false,
       })
 
+      return response
+    } catch (error) {
+      throw error
+    }
+  }
+
+  const confirmSignUp = async (email: string, confirmationCode: string, password: string) => {
+    try {
+      await authService.confirmSignUp(email, confirmationCode)
+      const response = await authService.login({ email, password })
+      authService.setToken(response.token)
+      let user = response.user
+      if (!user) {
+        user = await authService.verifyToken()
+      }
+      setAuthState({
+        user,
+        token: response.token,
+        isAuthenticated: true,
+        isLoading: false,
+      })
       return response
     } catch (error) {
       throw error

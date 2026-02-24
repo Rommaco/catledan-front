@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { SubuserModal } from '@/components/subuser/SubuserModal'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
+import { Modal } from '@/components/ui/Modal'
 import { useSubuser, useSubuserStats } from '@/hooks/subuser/useSubuser'
 import { useToast } from '@/hooks/useToast'
 import {
@@ -18,6 +19,7 @@ import {
   CreateSubuserData,
   UpdateSubuserData,
   ROLES_SUBUSER,
+  PERMISOS_SUBUSER,
   getRolColor,
   getPermisoColor,
   getStatusColor,
@@ -32,6 +34,7 @@ import {
   EyeIcon,
   PencilIcon,
   TrashIcon,
+  ClipboardDocumentIcon,
 } from '@heroicons/react/24/outline'
 
 function TeamContent() {
@@ -49,10 +52,14 @@ function TeamContent() {
     updateSubuser,
     deleteSubuser,
     refreshPasswords,
+    resetPassword,
+    getPermisos,
+    updatePermisos,
   } = useSubuser()
 
   const { stats, loadingStats, fetchStats } = useSubuserStats()
   const { toast } = useToast()
+  const safeData = Array.isArray(data) ? data : []
 
   // Estados del modal de subusuario
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -68,6 +75,20 @@ function TeamContent() {
   // Estados para modal de confirmación de contraseñas
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [passwordLoading, setPasswordLoading] = useState(false)
+
+  // Modal contraseña temporal (tras crear)
+  const [tempPasswordModal, setTempPasswordModal] = useState<{ fullName: string; password: string } | null>(null)
+
+  // Modal cambiar contraseña de un subusuario
+  const [resetPasswordSubuser, setResetPasswordSubuser] = useState<Subuser | null>(null)
+  const [resetPasswordValue, setResetPasswordValue] = useState('')
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false)
+
+  // Modal permisos de un subusuario (todos los módulos: ganado, reportes, etc.)
+  const [subuserForPermisos, setSubuserForPermisos] = useState<Subuser | null>(null)
+  const [permisosMap, setPermisosMap] = useState<Record<string, string[]>>({})
+  const [permisosMapLoading, setPermisosMapLoading] = useState(false)
+  const [permisosModalLoading, setPermisosModalLoading] = useState(false)
 
   const handleRefresh = useCallback(() => {
     fetchSubusers({
@@ -160,19 +181,33 @@ function TeamContent() {
     setModalLoading(true)
     try {
       if (modalMode === 'create') {
-        await addSubuser(dataToSave as CreateSubuserData)
+        const result = await addSubuser(dataToSave as CreateSubuserData)
+        setIsModalOpen(false)
+        handleRefresh()
+        if (result?.temporaryPassword) {
+          setTempPasswordModal({
+            fullName: (dataToSave as CreateSubuserData).fullName,
+            password: result.temporaryPassword,
+          })
+        } else {
+          toast({
+            type: 'success',
+            title: 'Éxito',
+            message: 'Subusuario creado correctamente.',
+          })
+        }
       } else if (selectedSubuser) {
         await updateSubuser(selectedSubuser._id, dataToSave as UpdateSubuserData)
+        toast({
+          type: 'success',
+          title: 'Éxito',
+          message: 'Subusuario actualizado correctamente.',
+        })
+        handleRefresh()
+        setIsModalOpen(false)
       }
-      toast({
-        type: 'success',
-        title: 'Éxito',
-        message: `Subusuario ${modalMode === 'create' ? 'creado' : 'actualizado'} correctamente.`,
-      })
-      handleRefresh()
-      setIsModalOpen(false)
-    } catch (error) {
-      console.error('Error al guardar subusuario:', error)
+    } catch (err) {
+      console.error('Error al guardar subusuario:', err)
       toast({
         type: 'error',
         title: 'Error',
@@ -180,6 +215,88 @@ function TeamContent() {
       })
     } finally {
       setModalLoading(false)
+    }
+  }
+
+  const handleResetPasswordClick = (subuser: Subuser) => {
+    setResetPasswordSubuser(subuser)
+    setResetPasswordValue('')
+  }
+
+  // Módulos con permisos (lectura/escritura) — mismos keys que el backend
+  const MODULOS_PERMISOS: { key: string; label: string }[] = [
+    { key: 'ganado', label: 'Ganado' },
+    { key: 'produccion-leche', label: 'Producción de leche' },
+    { key: 'cultivos', label: 'Cultivos' },
+    { key: 'reportes', label: 'Reportes' },
+    { key: 'finanzas', label: 'Finanzas' },
+    { key: 'subusers', label: 'Team (Subusuarios)' },
+    { key: 'configuracion', label: 'Configuración' },
+    { key: 'parcelas', label: 'Parcelas' },
+    { key: 'perfil', label: 'Perfil' },
+    { key: 'alertas', label: 'Alertas' },
+  ]
+
+  const handleOpenPermisos = async (subuser: Subuser) => {
+    setSubuserForPermisos(subuser)
+    setPermisosMapLoading(true)
+    setPermisosMap({})
+    try {
+      const map = await getPermisos(subuser._id)
+      setPermisosMap(map && typeof map === 'object' ? map : {})
+    } catch (err) {
+      console.error('Error al cargar permisos:', err)
+      toast({ type: 'error', title: 'Error', message: 'Error al cargar los permisos.' })
+    } finally {
+      setPermisosMapLoading(false)
+    }
+  }
+
+  const togglePermisoModulo = (modulo: string, accion: 'read' | 'write') => {
+    setPermisosMap((prev) => {
+      const arr = prev[modulo] ?? []
+      const next = arr.includes(accion) ? arr.filter((a) => a !== accion) : [...arr, accion]
+      return { ...prev, [modulo]: next }
+    })
+  }
+
+  const handleSavePermisos = async () => {
+    if (!subuserForPermisos) return
+    const toSend = Object.fromEntries(
+      Object.entries(permisosMap).filter(([, arr]) => arr.length > 0)
+    )
+    setPermisosModalLoading(true)
+    try {
+      await updatePermisos(subuserForPermisos._id, toSend)
+      handleRefresh()
+      setSubuserForPermisos(null)
+    } catch (err) {
+      console.error('Error al guardar permisos:', err)
+    } finally {
+      setPermisosModalLoading(false)
+    }
+  }
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetPasswordSubuser || !resetPasswordValue.trim()) return
+    if (resetPasswordValue.length < 8) {
+      toast({ type: 'error', title: 'Error', message: 'La contraseña debe tener al menos 8 caracteres.' })
+      return
+    }
+    setResetPasswordLoading(true)
+    try {
+      await resetPassword(resetPasswordSubuser._id, resetPasswordValue.trim())
+      setResetPasswordSubuser(null)
+      setResetPasswordValue('')
+    } finally {
+      setResetPasswordLoading(false)
+    }
+  }
+
+  const copyTempPassword = () => {
+    if (tempPasswordModal?.password) {
+      navigator.clipboard.writeText(tempPasswordModal.password)
+      toast({ type: 'success', title: 'Copiado', message: 'Contraseña copiada al portapapeles.' })
     }
   }
 
@@ -222,19 +339,22 @@ function TeamContent() {
       key: 'permisos',
       title: 'Permisos',
       dataIndex: 'permisos',
-      render: (permisos: string[]) => (
-        <div className="flex flex-wrap gap-1">
-          {permisos.map((permiso) => (
-            <Badge
-              key={permiso}
-              variant="info"
-              size="sm"
-            >
-              {permiso}
-            </Badge>
-          ))}
-        </div>
-      ),
+      render: (permisos: string[]) => {
+        const acciones = (permisos || []).filter((p) => p !== 'administrativo' && p !== 'trabajador')
+        const labels: Record<string, string> = { read: 'Lectura', write: 'Escritura', delete: 'Eliminación', export: 'Exportación' }
+        const variantMap: Record<string, 'info' | 'success' | 'warning' | 'error' | 'default'> = {
+          read: 'info', write: 'success', delete: 'error', export: 'info',
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {acciones.length ? acciones.map((permiso) => (
+              <Badge key={permiso} variant={variantMap[permiso] ?? 'default'} size="sm">
+                {labels[permiso] ?? permiso}
+              </Badge>
+            )) : <span className="text-gray-400 text-sm">—</span>}
+          </div>
+        )
+      },
     },
     {
       key: 'status',
@@ -378,13 +498,25 @@ function TeamContent() {
 
         {/* Table */}
         <EnhancedTable
-          data={data || []}
+          data={safeData}
           columns={columns}
           loading={loading}
           onEdit={handleEditSubuser}
           onDelete={handleDeleteSubuser}
+          onResetPassword={handleResetPasswordClick}
+          onEditPermissions={handleOpenPermisos}
+          onRefresh={handleRefresh}
           exportFilename="subusuarios"
           exportTitle="Reporte de Subusuarios"
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: total,
+            onChange: (page, newPageSize) => {
+              setCurrentPage(page)
+              if (newPageSize != null) setPageSize(newPageSize)
+            },
+          }}
           customFilters={[
             {
               key: 'rol',
@@ -445,6 +577,164 @@ function TeamContent() {
           loading={passwordLoading}
           variant="warning"
         />
+
+        {/* Modal contraseña temporal tras crear */}
+        {tempPasswordModal && (
+          <Modal
+            isOpen={true}
+            onClose={() => setTempPasswordModal(null)}
+            title="Contraseña temporal generada"
+            size="md"
+          >
+            <div className="p-4 space-y-4">
+              <p className="text-gray-600">
+                Para <strong>{tempPasswordModal.fullName}</strong> se generó esta contraseña temporal. Compártela de forma segura; el subusuario deberá cambiarla en su primer inicio de sesión.
+              </p>
+              <div className="flex items-stretch gap-3">
+                <code className="flex-1 min-w-0 px-3 py-3 bg-gray-100 rounded-lg border border-gray-200 font-mono text-sm break-all">
+                  {tempPasswordModal.password}
+                </code>
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={copyTempPassword}
+                  className="shrink-0 flex items-center gap-2"
+                  title="Copiar al portapapeles"
+                >
+                  <ClipboardDocumentIcon className="w-5 h-5" />
+                  Copiar
+                </Button>
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button variant="secondary" onClick={() => setTempPasswordModal(null)}>
+                  Entendido
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Modal permisos (todos los módulos) */}
+        {subuserForPermisos && (
+          <Modal
+            isOpen={true}
+            onClose={() => setSubuserForPermisos(null)}
+            title={`Permisos de ${subuserForPermisos.fullName}`}
+            size="lg"
+          >
+            <div className="p-4 space-y-4">
+              <p className="text-gray-600 text-sm">
+                Asigna permisos por módulo. <strong>Lectura</strong>: ver datos. <strong>Escritura</strong>: crear, editar y eliminar.
+              </p>
+              {permisosMapLoading ? (
+                <div className="py-8 text-center text-gray-500">Cargando permisos…</div>
+              ) : (
+                <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">
+                          Módulo
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+                          Lectura
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-gray-600 uppercase tracking-wider">
+                          Escritura
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {MODULOS_PERMISOS.map((mod) => (
+                        <tr key={mod.key} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {mod.label}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={(permisosMap[mod.key] ?? []).includes('read')}
+                              onChange={() => togglePermisoModulo(mod.key, 'read')}
+                              disabled={permisosModalLoading}
+                              className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="checkbox"
+                              checked={(permisosMap[mod.key] ?? []).includes('write')}
+                              onChange={() => togglePermisoModulo(mod.key, 'write')}
+                              disabled={permisosModalLoading}
+                              className="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4"
+                            />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setSubuserForPermisos(null)}
+                  disabled={permisosModalLoading || permisosMapLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleSavePermisos}
+                  loading={permisosModalLoading}
+                  disabled={permisosMapLoading}
+                >
+                  Guardar permisos
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Modal cambiar contraseña de un subusuario */}
+        {resetPasswordSubuser && (
+          <Modal
+            isOpen={true}
+            onClose={() => { setResetPasswordSubuser(null); setResetPasswordValue('') }}
+            title="Cambiar contraseña"
+            size="md"
+          >
+            <div className="p-4 space-y-4">
+              <p className="text-gray-600">
+                Nueva contraseña para <strong>{resetPasswordSubuser.fullName}</strong> (mín. 8 caracteres, con mayúscula, minúscula, número y símbolo).
+              </p>
+              <Input
+                label="Nueva contraseña"
+                type="password"
+                value={resetPasswordValue}
+                onChange={(e) => setResetPasswordValue(e.target.value)}
+                placeholder="••••••••"
+                disabled={resetPasswordLoading}
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => { setResetPasswordSubuser(null); setResetPasswordValue('') }}
+                  disabled={resetPasswordLoading}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={handleConfirmResetPassword}
+                  loading={resetPasswordLoading}
+                  disabled={resetPasswordValue.length < 8}
+                >
+                  Actualizar contraseña
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </div>
     </DashboardLayout>
   )

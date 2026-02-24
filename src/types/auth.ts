@@ -16,13 +16,15 @@ export interface AuthResponse {
   user?: User;
 }
 
+export type UserProfile = 'user' | 'super_user' | 'analytics' | 'admin';
+
 export interface User {
   id: string;
   email: string;
   fullName: string;
   businessName?: string;
   phone?: string;
-  rol: "trabajador" | "administrativo";
+  profile: UserProfile;
   plan?: "free" | "pro";
   createdAt?: string;
   updatedAt?: string;
@@ -35,9 +37,17 @@ export interface AuthState {
   isLoading: boolean;
 }
 
+export interface RegisterResult {
+  requiresConfirmation?: boolean;
+  message?: string;
+  token?: string;
+  user?: User;
+}
+
 export interface AuthContextType extends AuthState {
   login: (data: LoginData) => Promise<AuthResponse>;
-  register: (data: RegisterData) => Promise<AuthResponse>;
+  register: (data: RegisterData) => Promise<AuthResponse | RegisterResult>;
+  confirmSignUp: (email: string, confirmationCode: string, password: string) => Promise<AuthResponse>;
   googleLogin: (token: string) => Promise<AuthResponse>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<{ message: string }>;

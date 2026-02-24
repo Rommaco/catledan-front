@@ -193,7 +193,7 @@ export const useOfflineData = <T = Record<string, unknown>>(options: UseOfflineD
 
   // Obtener endpoint según tipo
   const getEndpointForType = (type: OfflineDataItem['type']): string => {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+    const baseUrl = (await import('@/lib/api/config')).getApiBaseUrl()
     
     switch (type) {
       case 'ganado':

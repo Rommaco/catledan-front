@@ -107,7 +107,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
             'text-center text-sm text-gray-500',
             animate && 'animate-fade-in'
           )}>
-            <p>© 2024 Catledan SaaS. Todos los derechos reservados.</p>
+            <p>© 2025 Catledan SaaS. Todos los derechos reservados.</p>
           </div>
         </div>
       </div>

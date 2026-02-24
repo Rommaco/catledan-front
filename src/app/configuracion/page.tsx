@@ -63,9 +63,9 @@ function ConfiguracionContent() {
 
   const [sistemaForm, setSistemaForm] = useState<ConfiguracionSistema>({
     idioma: 'es',
-    zonaHoraria: 'America/Mexico_City',
+    zonaHoraria: 'America/Lima',
     formatoFecha: 'DD/MM/YYYY',
-    moneda: 'MXN',
+    moneda: 'PEN',
     notificaciones: {
       email: true,
       push: true,
@@ -253,11 +253,11 @@ function ConfiguracionContent() {
                   />
 
                   <Input
-                    label="RFC"
+                    label="RUC (Perú)"
                     value={empresaForm.rfc}
                     onChange={(e) => handleEmpresaChange('rfc', e.target.value)}
                     disabled={empresaLoading}
-                    placeholder="RFC de la empresa"
+                    placeholder="RUC de la empresa (11 dígitos)"
                   />
 
                   <Input

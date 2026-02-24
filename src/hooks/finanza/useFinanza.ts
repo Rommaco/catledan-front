@@ -184,10 +184,7 @@ export const useFinanzaStats = (filters?: FinanzaFilters) => {
     }
   }, [toast])
 
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats, filters])
-
+  // La página llama fetchStats vía handleRefresh (mount y tras crear/editar/eliminar)
   return { stats, loadingStats, fetchStats }
 }
 

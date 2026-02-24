@@ -65,6 +65,15 @@ function CultivosContent() {
 
   const { stats, loadingStats, fetchStats } = useCultivoStats()
 
+  const safeData = Array.isArray(data) ? data : []
+  const formatDate = useCallback((fecha: string | undefined) => {
+    if (!fecha) return 'N/A'
+    const d = new Date(fecha)
+    return Number.isNaN(d.getTime()) ? 'N/A' : format(d, 'dd/MM/yyyy')
+  }, [])
+  const formatArea = useCallback((area: number | undefined) =>
+    (area != null && !Number.isNaN(Number(area)) ? Number(area).toFixed(2) : '0.00'), [])
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create')
   const [selectedCultivo, setSelectedCultivo] = useState<Cultivo | null>(null)
@@ -142,6 +151,11 @@ function CultivosContent() {
       handleRefresh()
     } catch (error) {
       console.error('Error al guardar:', error)
+      toast({
+        type: 'error',
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Error al guardar el cultivo.',
+      })
     } finally {
       setModalLoading(false)
     }
@@ -200,7 +214,7 @@ function CultivosContent() {
       title: 'Área (ha)',
       dataIndex: 'area',
       render: (area: number) => (
-        <span className="text-sm text-gray-600">{area.toFixed(2)}</span>
+        <span className="text-sm text-gray-600">{formatArea(area)}</span>
       )
     },
     {
@@ -220,17 +234,17 @@ function CultivosContent() {
       key: 'fechaSiembra',
       title: 'Fecha Siembra',
       dataIndex: 'fechaSiembra',
-      render: (fecha: string) => format(new Date(fecha), 'dd/MM/yyyy')
+      render: (fecha: string) => formatDate(fecha)
     },
     {
       key: 'fechaCosecha',
       title: 'Fecha Cosecha',
       dataIndex: 'fechaCosecha',
-      render: (fecha: string) => fecha ? format(new Date(fecha), 'dd/MM/yyyy') : 'N/A'
+      render: (fecha: string) => formatDate(fecha)
     },
-  ], [])
+  ], [formatDate, formatArea])
 
-  if (loading && data.length === 0) {
+  if (loading && safeData.length === 0) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -282,7 +296,7 @@ function CultivosContent() {
           <div className="animate-fade-in" style={{ animationDelay: '400ms' }}>
             <StatsCard
               title="Área Total"
-              value={loadingStats ? '...' : `${stats.totalArea.toFixed(2)} ha`}
+              value={loadingStats ? '...' : `${formatArea(stats.totalArea)} ha`}
               icon={<ChartBarIcon className="w-6 h-6" />}
               animate={true}
             />
@@ -312,7 +326,7 @@ function CultivosContent() {
         <div className="animate-fade-in" style={{ animationDelay: '800ms' }}>
           <EnhancedTable
             columns={columns}
-            data={data || []}
+            data={safeData}
             loading={loading}
             exportFilename="cultivos"
             exportTitle="Reporte de Cultivos"

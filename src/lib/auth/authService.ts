@@ -4,15 +4,14 @@ import {
   AuthResponse, 
   User 
 } from '@/types/auth'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+import { getApiBaseUrl } from '@/lib/api/config'
 
 class AuthService {
   private async request<T>(
     endpoint: string, 
     options: RequestInit = {}
   ): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`
+    const url = `${getApiBaseUrl()}${endpoint}`
     
     const config: RequestInit = {
       headers: {
@@ -77,10 +76,17 @@ class AuthService {
     })
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    return this.request<AuthResponse>('/auth/register', {
+  async register(data: RegisterData): Promise<AuthResponse | { message: string; requiresConfirmation: true }> {
+    return this.request<AuthResponse | { message: string; requiresConfirmation: true }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
+    })
+  }
+
+  async confirmSignUp(email: string, confirmationCode: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/confirm-signup', {
+      method: 'POST',
+      body: JSON.stringify({ email, confirmationCode }),
     })
   }
 
@@ -116,28 +122,21 @@ class AuthService {
   }
 
   async verifyToken(): Promise<User> {
-    // Como el backend no tiene endpoint de verificación, 
-    // usamos el endpoint de resumen del dashboard para verificar el token
     try {
-      await this.request('/dashboard/resumen')
-      // Si llegamos aquí, el token es válido
-      // Devolvemos un usuario básico (el backend no devuelve info del usuario en resumen)
-      const token = this.getToken()
-      if (!token) throw new Error('No token found')
-      
-      // Decodificar el token JWT básicamente para obtener info del usuario
-      const payload = JSON.parse(atob(token.split('.')[1]))
+      const response = await this.request<{ success?: boolean; data?: { id: string; email: string; fullName: string; businessName: string; phone?: string; plan?: { name: string }; profile?: string } }>('/perfil')
+      const perfil = response?.data ?? (response as { id?: string })?.id ? response : null
+      if (!perfil || typeof perfil !== 'object' || !('id' in perfil)) throw new Error('Perfil inválido')
+      const p = perfil as { id: string; email: string; fullName: string; businessName: string; phone?: string; plan?: { name: string }; profile?: string }
       return {
-        id: payload.id || payload.userId,
-        email: payload.email,
-        fullName: payload.fullName || payload.name || 'Usuario',
-        businessName: payload.businessName || 'Empresa',
-        rol: payload.rol || 'user',
-        plan: payload.plan || 'free',
-        phone: payload.phone || ''
+        id: p.id,
+        email: p.email,
+        fullName: p.fullName,
+        businessName: p.businessName || '',
+        phone: p.phone || '',
+        rol: (p.profile === 'trabajador' || p.profile === 'administrativo' ? p.profile : 'trabajador') as 'trabajador' | 'administrativo',
+        plan: (p.plan?.name === 'pro' ? 'pro' : 'free') as 'free' | 'pro',
       }
-    } catch (error) {
-      console.error('Error verifying token:', error)
+    } catch {
       throw new Error('Token inválido')
     }
   }

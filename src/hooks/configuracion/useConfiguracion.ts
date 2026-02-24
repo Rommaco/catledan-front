@@ -22,7 +22,7 @@ export const useConfiguracion = () => {
       setLoading(true)
       setError(null)
       const data = await configuracionService.get()
-      setConfiguracion(data)
+      setConfiguracion(data ?? null)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
       setError(errorMessage)
@@ -45,14 +45,13 @@ export const useConfiguracion = () => {
     }) => {
       try {
         setLoading(true)
-        const response = await configuracionService.create(data)
-        setConfiguracion(response.configuracion)
+        await configuracionService.update({ empresa: data.empresa, usuario: data.usuario, sistema: data.sistema })
+        await fetchConfiguracion()
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Configuración creada correctamente.',
         })
-        return response
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -66,21 +65,20 @@ export const useConfiguracion = () => {
         setLoading(false)
       }
     },
-    [toast],
+    [toast, fetchConfiguracion],
   )
 
   const updateConfiguracion = useCallback(
     async (data: UpdateConfiguracionData) => {
       try {
         setLoading(true)
-        const response = await configuracionService.update(data)
-        setConfiguracion(response.configuracion)
+        const updated = await configuracionService.update(data)
+        setConfiguracion(updated)
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Configuración actualizada correctamente.',
         })
-        return response
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -101,14 +99,13 @@ export const useConfiguracion = () => {
     async (empresa: ConfiguracionEmpresa) => {
       try {
         setLoading(true)
-        const response = await configuracionService.updateEmpresa(empresa)
-        setConfiguracion(response.configuracion)
+        const updated = await configuracionService.updateEmpresa(empresa)
+        setConfiguracion(updated)
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Configuración de empresa actualizada correctamente.',
         })
-        return response
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -129,14 +126,13 @@ export const useConfiguracion = () => {
     async (usuario: ConfiguracionUsuario) => {
       try {
         setLoading(true)
-        const response = await configuracionService.updateUsuario(usuario)
-        setConfiguracion(response.configuracion)
+        const updated = await configuracionService.updateUsuario(usuario)
+        setConfiguracion(updated)
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Configuración de usuario actualizada correctamente.',
         })
-        return response
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -157,14 +153,13 @@ export const useConfiguracion = () => {
     async (sistema: ConfiguracionSistema) => {
       try {
         setLoading(true)
-        const response = await configuracionService.updateSistema(sistema)
-        setConfiguracion(response.configuracion)
+        const updated = await configuracionService.updateSistema(sistema)
+        setConfiguracion(updated)
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Configuración del sistema actualizada correctamente.',
         })
-        return response
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)

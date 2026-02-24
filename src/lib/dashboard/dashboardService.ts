@@ -4,14 +4,12 @@ import {
   GanadoPorEstado, 
   ProduccionLeche,
   CultivoDashboard,
-  DashboardStats
 } from '@/types/dashboard'
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+import { getApiBaseUrl } from '@/lib/api/config'
 
 class DashboardService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`
+    const url = `${getApiBaseUrl()}${endpoint}`
     
     const config: RequestInit = {
       headers: {
@@ -37,12 +35,15 @@ class DashboardService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        console.error('❌ Error en la respuesta:', errorData)
-        throw new Error(errorData.message || 'Error en la solicitud')
+        const errBody = errorData && typeof errorData === 'object' ? errorData : {}
+        const msg = (errBody as { message?: string })?.message || 'Error en la solicitud'
+        console.error('❌ Error en la respuesta:', msg)
+        throw new Error(msg)
       }
 
-      const data = await response.json()
-      return data
+      const raw = await response.json()
+      const data = raw && typeof raw === 'object' && 'data' in raw ? (raw as { data: T }).data : raw
+      return data as T
     } catch (error) {
       console.error('❌ Error en la petición:', error)
       if (error instanceof Error) {
@@ -53,68 +54,53 @@ class DashboardService {
   }
 
   async getResumen(): Promise<DashboardResumen> {
-    return this.request<DashboardResumen>('/dashboard/resumen')
+    const raw = await this.request<{ totalGanado?: number; totalParcelas?: number; finanzas?: { ingresos?: number; gastos?: number } }>('/dashboard/negocio/resumen')
+    return {
+      totalGanado: raw?.totalGanado ?? 0,
+      totalIngresos: raw?.finanzas?.ingresos ?? 0,
+      totalGastos: raw?.finanzas?.gastos ?? 0,
+      totalReportes: raw?.totalParcelas ?? 0,
+    }
   }
 
   async getFinanzasMensuales(year?: number): Promise<FinanzaMensual[]> {
-    const endpoint = year
-      ? `/dashboard/finanzas-mensuales?year=${year}`
-      : '/dashboard/finanzas-mensuales'
-    return this.request<FinanzaMensual[]>(endpoint)
+    let endpoint = '/dashboard/negocio/finanzas-mensuales'
+    if (year) endpoint += `?startDate=${year}-01-01&endDate=${year}-12-31`
+    const data = await this.request<{ mensual?: { month: number; ingresos: number; gastos: number }[] }>(endpoint)
+    const list = data?.mensual ?? []
+    return Array.isArray(list) ? list.map((x) => ({ _id: x.month, ingresos: x.ingresos, gastos: x.gastos })) : []
   }
 
   async getGanadoPorEstado(): Promise<GanadoPorEstado[]> {
-    return this.request<GanadoPorEstado[]>('/dashboard/ganado-por-estado')
+    const data = await this.request<{ porEstado?: { estado: string; cantidad: number }[] }>('/dashboard/negocio/ganado-por-estado')
+    const list = data?.porEstado ?? []
+    return Array.isArray(list) ? list.map((x) => ({ _id: x.estado || 'Sin estado', cantidad: x.cantidad })) : []
   }
 
   async getProduccionLeche(year?: number): Promise<ProduccionLeche[]> {
-    const endpoint = year
-      ? `/dashboard/produccion-leche?year=${year}`
-      : '/dashboard/produccion-leche'
-    return this.request<ProduccionLeche[]>(endpoint)
+    let endpoint = '/dashboard/negocio/produccion-leche'
+    if (year) endpoint += `?startDate=${year}-01-01&endDate=${year}-12-31`
+    const data = await this.request<{ mensual?: { month: number; total: number }[] }>(endpoint)
+    const list = data?.mensual ?? []
+    return Array.isArray(list) ? list.map((x) => ({ _id: x.month, totalLitros: x.total })) : []
   }
 
   async getCultivosDashboard(): Promise<CultivoDashboard[]> {
     try {
-      // Obtener todos los cultivos y procesarlos para el dashboard
-      const response = await this.request<{ data: Record<string, unknown>[], total: number }>('/cultivos')
-      const cultivos = response.data || response
-      
-      // Validar que cultivos sea un array
-      if (!Array.isArray(cultivos)) {
-        console.warn('⚠️ Cultivos no es un array:', cultivos)
-        return []
-      }
-      
-      // Agrupar por tipo de cultivo
-      const cultivosGrouped = cultivos.reduce((acc: Record<string, CultivoDashboard>, cultivo: Record<string, unknown>) => {
-        const tipo = cultivo.tipo || 'Sin tipo'
-        if (!acc[tipo]) {
-          acc[tipo] = { _id: tipo, cantidad: 0, area: 0 }
-        }
+      const response = await this.request<{ data?: unknown[] } | unknown[]>('/cultivos')
+      const raw = Array.isArray(response) ? response : (response as { data?: unknown[] })?.data
+      const list = (Array.isArray(raw) ? raw : []) as Record<string, unknown>[]
+      const grouped = list.reduce<Record<string, CultivoDashboard>>((acc, c) => {
+        const tipo = (c.tipo as string) || 'Sin tipo'
+        if (!acc[tipo]) acc[tipo] = { _id: tipo, cantidad: 0, area: 0 }
         acc[tipo].cantidad += 1
-        acc[tipo].area += cultivo.area || 0
+        acc[tipo].area += (c.area as number) || 0
         return acc
       }, {})
-      
-      return Object.values(cultivosGrouped)
-    } catch (error) {
-      console.error('❌ Error al obtener cultivos:', error)
+      return Object.values(grouped)
+    } catch {
       return []
     }
-  }
-
-  async getStatistics(): Promise<DashboardStats> {
-    return this.request<DashboardStats>('/dashboard/statistics')
-  }
-
-  // Endpoints de prueba para debugging
-  async testGanado(): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>('/dashboard/test-ganado')
-  }
-
-  async testFinanzas(): Promise<Record<string, unknown>> {
-    return this.request<Record<string, unknown>>('/dashboard/test-finanzas')
   }
 }
 

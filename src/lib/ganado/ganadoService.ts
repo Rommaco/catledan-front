@@ -1,3 +1,4 @@
+import { getApiBaseUrl } from '@/lib/api/config'
 import { 
   Ganado, 
   CreateGanadoData, 
@@ -6,12 +7,9 @@ import {
   GanadoFilters 
 } from '@/types/ganado'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
-
 class GanadoService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`
-    
+    const url = `${getApiBaseUrl()}${endpoint}`
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -19,40 +17,24 @@ class GanadoService {
       },
       ...options,
     }
-
-    // Agregar token si existe
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token')
       if (token) {
-        config.headers = {
-          ...config.headers,
-          Authorization: `Bearer ${token}`,
-        }
+        config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
       }
     }
-
-    try {
-      const response = await fetch(url, config)
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Error en la solicitud')
-      }
-
-      const data = await response.json()
-      return data
-    } catch (error) {
-      console.error('❌ Error en la petición:', error)
-      if (error instanceof Error) {
-        throw error
-      }
-      throw new Error('Error desconocido')
+    const response = await fetch(url, config)
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})) as { error?: { message?: string }; message?: string }
+      const msg = errorData?.error?.message ?? errorData?.message ?? `Error en la solicitud: ${response.status}`
+      throw new Error(msg)
     }
+    return response.json()
   }
 
+  /** GET /ganado - Lista con paginación y filtros. Backend devuelve { data: { ganados, total } } */
   async getAll(filters?: GanadoFilters): Promise<GanadoResponse> {
     const queryParams = new URLSearchParams()
-    
     if (filters?.search) queryParams.append('search', filters.search)
     if (filters?.categoria) queryParams.append('categoria', filters.categoria)
     if (filters?.estado) queryParams.append('estado', filters.estado)
@@ -60,9 +42,12 @@ class GanadoService {
     if (filters?.sexo) queryParams.append('sexo', filters.sexo)
     if (filters?.page) queryParams.append('page', filters.page.toString())
     if (filters?.limit) queryParams.append('limit', filters.limit.toString())
-
     const endpoint = `/ganado${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-    return this.request<GanadoResponse>(endpoint)
+    const response = await this.request<{ success?: boolean; data?: { ganados?: (Ganado & { id?: string })[]; total?: number } }>(endpoint)
+    const inner = response?.data
+    const rawList = Array.isArray(inner?.ganados) ? inner.ganados : []
+    const data = rawList.map((g) => ({ ...g, _id: (g as Ganado)._id ?? (g as { id?: string }).id ?? '' })) as Ganado[]
+    return { data, total: typeof inner?.total === 'number' ? inner.total : 0 }
   }
 
   private getMockData(): GanadoResponse {
@@ -165,73 +150,51 @@ class GanadoService {
     }
   }
 
+  /** GET /ganado/:id - Uno por ID. Backend devuelve { data: { ganado } }; normalizar _id desde id */
   async getById(id: string): Promise<Ganado> {
-    try {
-      return await this.request<Ganado>(`/ganado/${id}`)
-    } catch (error) {
-      // Si el backend no está disponible, buscar en datos de ejemplo
-      console.warn('⚠️ Backend no disponible, usando datos de ejemplo')
-      const mockData = this.getMockData()
-      const ganado = mockData.data.find(g => g._id === id)
-      if (ganado) return ganado
-      throw new Error('Ganado no encontrado')
+    const response = await this.request<{ success?: boolean; data?: { ganado?: Ganado & { id?: string } } }>(`/ganado/${id}`)
+    const raw = response?.data?.ganado
+    if (raw && typeof raw === 'object') {
+      const _id = (raw as Ganado)._id ?? (raw as { id?: string }).id
+      return { ...raw, _id: _id ?? id } as Ganado
     }
+    return response as unknown as Ganado
   }
 
+  /** POST /ganado - Crear. Backend devuelve { data: { ganado } } */
   async create(data: CreateGanadoData): Promise<Ganado> {
-    try {
-      return await this.request<Ganado>('/ganado', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      })
-    } catch (error) {
-      // Si el backend no está disponible, simular creación exitosa
-      console.warn('⚠️ Backend no disponible, simulando creación')
-      const newGanado: Ganado = {
-        _id: Date.now().toString(),
-        ...data,
-        user: 'user1',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      return newGanado
+    const response = await this.request<{ success?: boolean; data?: { ganado?: Ganado & { id?: string } } }>('/ganado', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+    const raw = response?.data?.ganado
+    if (raw && typeof raw === 'object') {
+      const _id = (raw as Ganado)._id ?? (raw as { id?: string }).id
+      return { ...raw, _id: _id ?? '' } as Ganado
     }
+    return response as unknown as Ganado
   }
 
+  /** PUT /ganado/:id - Actualizar. Backend devuelve { data: { ganado } } */
   async update(id: string, data: UpdateGanadoData): Promise<Ganado> {
-    try {
-      return await this.request<Ganado>(`/ganado/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      })
-    } catch (error) {
-      // Si el backend no está disponible, simular actualización exitosa
-      console.warn('⚠️ Backend no disponible, simulando actualización')
-      const mockData = this.getMockData()
-      const existingGanado = mockData.data.find(g => g._id === id)
-      if (!existingGanado) throw new Error('Ganado no encontrado')
-      
-      const updatedGanado: Ganado = {
-        ...existingGanado,
-        ...data,
-        updatedAt: new Date().toISOString()
-      }
-      return updatedGanado
+    const response = await this.request<{ success?: boolean; data?: { ganado?: Ganado & { id?: string } } }>(`/ganado/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    })
+    const raw = response?.data?.ganado
+    if (raw && typeof raw === 'object') {
+      const _id = (raw as Ganado)._id ?? (raw as { id?: string }).id
+      return { ...raw, _id: _id ?? id } as Ganado
     }
+    return response as unknown as Ganado
   }
 
+  /** DELETE /ganado/:id - Eliminar. Backend devuelve { data: { deleted: true } } */
   async delete(id: string): Promise<void> {
-    try {
-      return await this.request<void>(`/ganado/${id}`, {
-        method: 'DELETE',
-      })
-    } catch (error) {
-      // Si el backend no está disponible, simular eliminación exitosa
-      console.warn('⚠️ Backend no disponible, simulando eliminación')
-      return Promise.resolve()
-    }
+    await this.request<{ success?: boolean; data?: { deleted?: boolean } }>(`/ganado/${id}`, { method: 'DELETE' })
   }
 
+  /** GET /ganado/stats - Estadísticas (si el backend lo expone). Backend puede devolver { data: { ... } } */
   async getStats(): Promise<{
     total: number;
     porCategoria: Record<string, number>;
@@ -239,7 +202,18 @@ class GanadoService {
     porSexo: Record<string, number>;
   }> {
     try {
-      return await this.request('/ganado/stats')
+      const res = await this.request<{ success?: boolean; data?: { total?: number; porCategoria?: Record<string, number>; porEstado?: Record<string, number>; porSexo?: Record<string, number> } }>('/ganado/stats')
+      const d = (res as { data?: unknown })?.data
+      if (d && typeof d === 'object' && !Array.isArray(d)) {
+        const o = d as Record<string, unknown>
+        return {
+          total: typeof o.total === 'number' ? o.total : 0,
+          porCategoria: (o.porCategoria && typeof o.porCategoria === 'object') ? (o.porCategoria as Record<string, number>) : {},
+          porEstado: (o.porEstado && typeof o.porEstado === 'object') ? (o.porEstado as Record<string, number>) : {},
+          porSexo: (o.porSexo && typeof o.porSexo === 'object') ? (o.porSexo as Record<string, number>) : {},
+        }
+      }
+      return res as { total: number; porCategoria: Record<string, number>; porEstado: Record<string, number>; porSexo: Record<string, number> }
     } catch (error) {
       // Si el endpoint no existe, calcular estadísticas desde los datos locales
       console.warn('⚠️ Endpoint /ganado/stats no disponible, usando datos locales')
@@ -265,6 +239,81 @@ class GanadoService {
       
       return stats
     }
+  }
+
+  /** GET /ganado/:id/qr - QR del animal (?format=base64 | png) */
+  async getQr(ganadoId: string, format: 'base64' | 'png' = 'base64'): Promise<{ qr: string } | Blob> {
+    const url = `${getApiBaseUrl()}/ganado/${ganadoId}/qr?format=${format}`
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    const res = await fetch(url, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({})) as { error?: { message?: string }; message?: string }
+      throw new Error(err?.error?.message ?? err?.message ?? `Error ${res.status}`)
+    }
+    if (format === 'png') return res.blob()
+    const data = await res.json()
+    return data?.data ?? data
+  }
+
+  /** GET /ganado/scan - Iniciar escaneo */
+  async getScan(): Promise<unknown> {
+    return this.request<unknown>('/ganado/scan')
+  }
+
+  /** GET /ganado/:id/trazabilidad */
+  async getTrazabilidad(ganadoId: string): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/trazabilidad`)
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** GET /ganado/:id/trazabilidad/blockchain */
+  async getTrazabilidadBlockchain(ganadoId: string): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/trazabilidad/blockchain`)
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** GET /ganado/:id/expediente */
+  async getExpediente(ganadoId: string): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/expediente`)
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** POST /ganado/:id/vacunas */
+  async postVacuna(ganadoId: string, body: Record<string, unknown>): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/vacunas`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** POST /ganado/:id/tratamientos */
+  async postTratamiento(ganadoId: string, body: Record<string, unknown>): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/tratamientos`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** POST /ganado/:id/movimientos */
+  async postMovimiento(ganadoId: string, body: Record<string, unknown>): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/movimientos`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return (data as { data?: unknown })?.data ?? data
+  }
+
+  /** POST /ganado/:id/consultas */
+  async postConsulta(ganadoId: string, body: Record<string, unknown>): Promise<unknown> {
+    const data = await this.request<{ success?: boolean; data?: unknown }>(`/ganado/${ganadoId}/consultas`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    return (data as { data?: unknown })?.data ?? data
   }
 }
 

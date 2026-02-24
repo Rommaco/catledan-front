@@ -49,6 +49,7 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [showReproductive, setShowReproductive] = useState(false)
 
   // Función para convertir GanadoFormData a CreateGanadoData
   const convertFormDataToCreateData = (data: GanadoFormData): CreateGanadoData => {
@@ -91,7 +92,6 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
           observaciones: ganado.observaciones || undefined
         })
       } else {
-        // Resetear para crear nuevo
         setFormData({
           nombre: '',
           raza: '',
@@ -107,6 +107,7 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
         })
       }
       setErrors({})
+      setShowReproductive(mode === 'edit' && !!ganado && !!(ganado.estadoReproductivo || ganado.numeroPartos || ganado.fechaUltimoCelo || ganado.toroPadre))
     }
   }, [isOpen, mode, ganado])
 
@@ -263,93 +264,88 @@ export const GanadoModal: React.FC<GanadoModalProps> = ({
           </div>
         </div>
 
-        {/* Información Reproductiva */}
+        {/* Información reproductiva: oculta por defecto, solo para hembras */}
         {formData.sexo === 'hembra' && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-              <BeakerIcon className="h-5 w-5 mr-2 text-green-600" />
-              Información Reproductiva
-            </h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <CustomSelect
-                label="Estado Reproductivo"
-                value={formData.estadoReproductivo}
-                onChange={(value) => handleInputChange('estadoReproductivo', value)}
-                options={estadoReproductivoOptions}
-                placeholder="Seleccionar estado"
-              />
-              
-              <DatePicker
-                label="Último Celo"
-                value={formData.fechaUltimoCelo || undefined}
-                onChange={(date) => handleInputChange('fechaUltimoCelo', date)}
-              />
-              
-              <DatePicker
-                label="Última Monta"
-                value={formData.fechaUltimaMonta || undefined}
-                onChange={(date) => handleInputChange('fechaUltimaMonta', date)}
-              />
-              
-              <DatePicker
-                label="Fecha de Inseminación"
-                value={formData.fechaInseminacion || undefined}
-                onChange={(date) => handleInputChange('fechaInseminacion', date)}
-              />
-              
-              <Input
-                label="Toro Padre"
-                value={formData.toroPadre || undefined}
-                onChange={(e) => handleInputChange('toroPadre', e.target.value)}
-                placeholder="Ej: TORO001"
-              />
-              
-              <DatePicker
-                label="Fecha Esperada de Parto"
-                value={formData.fechaEsperadaParto || undefined}
-                onChange={(date) => handleInputChange('fechaEsperadaParto', date)}
-              />
-              
-              <Input
-                label="Tiempo Seca (días)"
-                type="number"
-                value={formData.tiempoSeca || 0}
-                onChange={(e) => handleInputChange('tiempoSeca', parseInt(e.target.value) || 0)}
-                placeholder="Ej: 45"
-              />
-              
-              <Input
-                label="Días de Lactancia"
-                type="number"
-                value={formData.diasLactancia || 0}
-                onChange={(e) => handleInputChange('diasLactancia', parseInt(e.target.value) || 0)}
-                placeholder="Ej: 120"
-              />
-              
-              <Input
-                label="Número de Partos"
-                type="number"
-                value={formData.numeroPartos || 0}
-                onChange={(e) => handleInputChange('numeroPartos', parseInt(e.target.value) || 0)}
-                placeholder="Ej: 3"
-              />
-              
-              <Input
-                label="Última Producción de Leche (L/día)"
-                type="number"
-                step="0.1"
-                value={formData.ultimaProduccionLeche || 0}
-                onChange={(e) => handleInputChange('ultimaProduccionLeche', parseFloat(e.target.value) || 0)}
-                placeholder="Ej: 25"
-              />
-              
-              <DatePicker
-                label="Próxima Vacuna"
-                value={formData.proximaVacuna || undefined}
-                onChange={(date) => handleInputChange('proximaVacuna', date)}
-              />
-            </div>
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={() => setShowReproductive((v) => !v)}
+              className="text-sm font-medium text-green-600 hover:text-green-800 hover:underline flex items-center gap-1"
+            >
+              <BeakerIcon className="h-4 w-4" />
+              {showReproductive ? 'Ocultar información reproductiva' : 'Mostrar información reproductiva (opcional)'}
+            </button>
+            {showReproductive && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+                <CustomSelect
+                  label="Estado reproductivo"
+                  value={formData.estadoReproductivo}
+                  onChange={(value) => handleInputChange('estadoReproductivo', value)}
+                  options={estadoReproductivoOptions}
+                  placeholder="Seleccionar"
+                />
+                <Input
+                  label="Número de partos"
+                  type="number"
+                  value={formData.numeroPartos ?? ''}
+                  onChange={(e) => handleInputChange('numeroPartos', parseInt(e.target.value, 10) || 0)}
+                  placeholder="Ej: 2"
+                />
+                <DatePicker
+                  label="Último celo"
+                  value={formData.fechaUltimoCelo || undefined}
+                  onChange={(date) => handleInputChange('fechaUltimoCelo', date)}
+                />
+                <DatePicker
+                  label="Última monta"
+                  value={formData.fechaUltimaMonta || undefined}
+                  onChange={(date) => handleInputChange('fechaUltimaMonta', date)}
+                />
+                <DatePicker
+                  label="Fecha inseminación"
+                  value={formData.fechaInseminacion || undefined}
+                  onChange={(date) => handleInputChange('fechaInseminacion', date)}
+                />
+                <Input
+                  label="Toro padre"
+                  value={formData.toroPadre || ''}
+                  onChange={(e) => handleInputChange('toroPadre', e.target.value)}
+                  placeholder="Ej: TORO001"
+                />
+                <DatePicker
+                  label="Fecha esperada de parto"
+                  value={formData.fechaEsperadaParto || undefined}
+                  onChange={(date) => handleInputChange('fechaEsperadaParto', date)}
+                />
+                <Input
+                  label="Tiempo seca (días)"
+                  type="number"
+                  value={formData.tiempoSeca ?? ''}
+                  onChange={(e) => handleInputChange('tiempoSeca', parseInt(e.target.value, 10) || 0)}
+                  placeholder="45"
+                />
+                <Input
+                  label="Días de lactancia"
+                  type="number"
+                  value={formData.diasLactancia ?? ''}
+                  onChange={(e) => handleInputChange('diasLactancia', parseInt(e.target.value, 10) || 0)}
+                  placeholder="120"
+                />
+                <Input
+                  label="Última producción leche (L/día)"
+                  type="number"
+                  step="0.1"
+                  value={formData.ultimaProduccionLeche ?? ''}
+                  onChange={(e) => handleInputChange('ultimaProduccionLeche', parseFloat(e.target.value) || 0)}
+                  placeholder="25"
+                />
+                <DatePicker
+                  label="Próxima vacuna"
+                  value={formData.proximaVacuna || undefined}
+                  onChange={(date) => handleInputChange('proximaVacuna', date)}
+                />
+              </div>
+            )}
           </div>
         )}
 

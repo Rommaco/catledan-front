@@ -32,8 +32,9 @@ export const useSubuser = () => {
           limit: pageSize,
         })
 
-        setData(response)
-        setTotal(response.length)
+        const list = Array.isArray(response) ? response : []
+        setData(list)
+        setTotal(list.length)
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -53,14 +54,14 @@ export const useSubuser = () => {
     async (newData: CreateSubuserData) => {
       try {
         setLoading(true)
-        const createdRecord = await subuserService.create(newData)
+        const result = await subuserService.create(newData)
         toast({
           type: 'success',
           title: 'Éxito',
           message: 'Subusuario creado correctamente.',
         })
-        fetchSubusers() // Refresh data after adding
-        return createdRecord
+        fetchSubusers()
+        return result
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
         setError(errorMessage)
@@ -141,7 +142,7 @@ export const useSubuser = () => {
         title: 'Éxito',
         message: `Se actualizaron ${response.updatedCount} contraseñas.`,
       })
-      fetchSubusers() // Refresh data after refreshing passwords
+      fetchSubusers()
       return response
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
@@ -157,6 +158,62 @@ export const useSubuser = () => {
     }
   }, [toast, fetchSubusers])
 
+  const resetPassword = useCallback(
+    async (id: string, newPassword: string) => {
+      try {
+        setLoading(true)
+        await subuserService.resetPassword(id, newPassword)
+        toast({
+          type: 'success',
+          title: 'Éxito',
+          message: 'Contraseña actualizada correctamente.',
+        })
+        fetchSubusers()
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+        toast({
+          type: 'error',
+          title: 'Error',
+          message: 'Error al cambiar la contraseña.',
+        })
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [toast, fetchSubusers],
+  )
+
+  const getPermisos = useCallback(async (id: string) => {
+    return subuserService.getPermisos(id)
+  }, [])
+
+  const updatePermisos = useCallback(
+    async (id: string, permisos: Record<string, string[]>) => {
+      try {
+        setLoading(true)
+        await subuserService.updatePermisos(id, permisos)
+        toast({
+          type: 'success',
+          title: 'Éxito',
+          message: 'Permisos actualizados correctamente.',
+        })
+        fetchSubusers()
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Error desconocido'
+        toast({
+          type: 'error',
+          title: 'Error',
+          message: 'Error al actualizar los permisos.',
+        })
+        throw err
+      } finally {
+        setLoading(false)
+      }
+    },
+    [toast, fetchSubusers],
+  )
+
   return {
     data,
     total,
@@ -171,6 +228,9 @@ export const useSubuser = () => {
     updateSubuser,
     deleteSubuser,
     refreshPasswords,
+    resetPassword,
+    getPermisos,
+    updatePermisos,
   }
 }
 
@@ -209,10 +269,7 @@ export const useSubuserStats = (filters?: SubuserFilters) => {
     }
   }, [toast])
 
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats, filters])
-
+  // La página llama fetchStats vía handleRefresh
   return { stats, loadingStats, fetchStats }
 }
 

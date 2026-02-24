@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Rutas que requieren autenticación
-  const protectedRoutes = ['/dashboard', '/ganado', '/cultivos', '/leche', '/finanzas', '/reportes', '/configuracion']
+  const protectedRoutes = ['/dashboard', '/ganado', '/sanidad', '/reproduccion', '/cultivos', '/leche', '/finanzas', '/reportes', '/configuracion']
   
   // Rutas de autenticación (solo para usuarios no autenticados)
   const authRoutes = ['/auth/login', '/auth/register', '/auth/forgot-password']
