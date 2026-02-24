@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useRef, useEffect } from 'react'
 import { ChatBubbleLeftRightIcon, XMarkIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
+import ReactMarkdown from 'react-markdown'
 import { sendAssistantMessage } from '@/lib/assistant/assistantService'
 
 interface Message {
@@ -45,7 +46,10 @@ export function AssistantWidget() {
     setMessages((prev) => [...prev, userMsg])
     setLoading(true)
     try {
-      const answer = await sendAssistantMessage(text)
+      const history = messages
+        .filter((m) => m.id !== 'welcome')
+        .map((m) => ({ role: m.role, content: m.text }))
+      const answer = await sendAssistantMessage(text, history)
       const assistantMsg: Message = {
         id: `a-${Date.now()}`,
         role: 'assistant',
@@ -118,7 +122,13 @@ export function AssistantWidget() {
                       : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md shadow-sm'
                   }`}
                 >
-                  {m.text}
+                  {m.role === 'assistant' ? (
+                    <div className="prose prose-sm prose-gray max-w-none [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_ul]:my-1 [&_ol]:my-1 [&_p]:my-1">
+                      <ReactMarkdown>{m.text}</ReactMarkdown>
+                    </div>
+                  ) : (
+                    m.text
+                  )}
                 </div>
               </div>
             ))}
@@ -140,7 +150,7 @@ export function AssistantWidget() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="Pregunta a Dan sobre ganado, cultivos, sanidad..."
-                className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
+                className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none"
                 disabled={loading}
               />
               <button

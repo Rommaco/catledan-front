@@ -6,8 +6,13 @@ interface ApiBody<T = unknown> {
   error?: { message?: string }
 }
 
+export type ChatHistoryItem = { role: 'user' | 'assistant'; content: string }
+
 /** POST /assistant/chat - Dan (especialista veterinario y agropecuario) */
-export async function sendAssistantMessage(message: string): Promise<string> {
+export async function sendAssistantMessage(
+  message: string,
+  history: ChatHistoryItem[] = []
+): Promise<string> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
   const url = `${getApiBaseUrl()}/assistant/chat`
   const res = await fetch(url, {
@@ -16,7 +21,7 @@ export async function sendAssistantMessage(message: string): Promise<string> {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
     },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, history }),
   })
   const json = (await res.json().catch(() => ({}))) as ApiBody<{ answer?: string; output?: string }>
   if (!res.ok) {
