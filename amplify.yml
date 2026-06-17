@@ -3,14 +3,12 @@ frontend:
   phases:
     preBuild:
       commands:
-        - corepack enable
-        - corepack prepare pnpm@latest --activate
-        - pnpm install --no-frozen-lockfile
+        - npm ci
     build:
       commands:
         - echo "NEXT_PUBLIC_API_URL=https://api.catledan.com" >> .env.production
         - echo "NEXT_PUBLIC_APP_NAME=Catledan SaaS" >> .env.production
-        - pnpm run build
+        - npm run build
   artifacts:
     baseDirectory: .next
     files:
